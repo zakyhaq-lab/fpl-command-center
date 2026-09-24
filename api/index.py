@@ -2,6 +2,7 @@ from http.server import BaseHTTPRequestHandler
 import urllib.request
 import json
 import time
+import os
 from urllib.parse import urlparse, parse_qs
 
 BASE_URL = "https://fantasy.premierleague.com/api"
@@ -22,14 +23,48 @@ def fetch_json(url, ttl=300):
         CACHE[url] = (data, now)
         return data
 
+def get_html_page():
+    candidates = [
+        os.path.join(os.getcwd(), "public", "index.html"),
+        os.path.join(os.getcwd(), "index.html"),
+        os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "public", "index.html"),
+        os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "index.html"),
+    ]
+    for p in candidates:
+        if os.path.exists(p):
+            try:
+                with open(p, "r", encoding="utf-8") as f:
+                    return f.read()
+            except Exception:
+                pass
+    return "<!DOCTYPE html><html><body><h1>Loading FPL Command Center...</h1><script>location.reload();</script></body></html>"
+
 class handler(BaseHTTPRequestHandler):
     def do_GET(self):
         parsed_url = urlparse(self.path)
+        query = parse_qs(parsed_url.query)
+        
+        # Determine actual request path
+        req_path = query.get("__route", [None])[0]
+        if not req_path:
+            req_path = self.headers.get("x-vercel-matched-path") or self.headers.get("x-forwarded-uri") or parsed_url.path
+        if "?" in req_path:
+            req_path = req_path.split("?")[0]
+        if len(req_path) > 1 and req_path.endswith("/"):
+            req_path = req_path[:-1]
+
+        # 0. Serve HTML if root or index requested
+        if req_path in ("/", "/index.html", ""):
+            self.send_response(200)
+            self.send_header("Content-Type", "text/html; charset=utf-8")
+            self.send_header("Cache-Control", "public, max-age=0, must-revalidate")
+            self.end_headers()
+            self.wfile.write(get_html_page().encode())
+            return
         
         # API 0: Image Proxy (CORS and Canvas Safe)
-        if parsed_url.path == "/api/image-proxy":
+        elif req_path == "/api/image-proxy":
             try:
-                query = parse_qs(parsed_url.query)
                 target_url = query.get("url", [None])[0]
                 if not target_url or not (
                     target_url.startswith("https://resources.premierleague.com/") or
@@ -56,7 +91,7 @@ class handler(BaseHTTPRequestHandler):
             return
 
         # API 1: User Team Profile, Picks, History, and Leagues
-        elif parsed_url.path == "/api/user-team":
+        elif req_path == "/api/user-team":
             try:
                 static_data = fetch_json(f"{BASE_URL}/bootstrap-static/", ttl=600)
                 teams_map = {t["id"]: t for t in static_data.get("teams", [])}
@@ -69,10 +104,11 @@ class handler(BaseHTTPRequestHandler):
                         curr_event = ev.get("id", 5)
                         break
 
-                entry_data = fetch_json(f"{BASE_URL}/entry/2805703/", ttl=180)
+                team_id = query.get("id", ["2805703"])[0]
+                entry_data = fetch_json(f"{BASE_URL}/entry/{team_id}/", ttl=180)
                 curr_event = entry_data.get("current_event", curr_event)
-                hist_data = fetch_json(f"{BASE_URL}/entry/2805703/history/", ttl=180)
-                picks_data = fetch_json(f"{BASE_URL}/entry/2805703/event/{curr_event}/picks/", ttl=180)
+                hist_data = fetch_json(f"{BASE_URL}/entry/{team_id}/history/", ttl=180)
+                picks_data = fetch_json(f"{BASE_URL}/entry/{team_id}/event/{curr_event}/picks/", ttl=180)
 
                 # Fetch upcoming fixtures for next 3 gameweeks
                 fixtures_by_team = {t["id"]: [] for t in static_data.get("teams", [])}
@@ -96,7 +132,7 @@ class handler(BaseHTTPRequestHandler):
                                     "fdr": f.get("team_a_difficulty", 3)
                                 })
                     except Exception as e:
-                        print("Error fetching fixtures for gw", gw, e)
+                        pass
 
                 # Enrich picks
                 picks_enriched = []
@@ -262,9 +298,8 @@ class handler(BaseHTTPRequestHandler):
                 self.wfile.write(json.dumps({"error": str(e)}).encode())
 
         # API 2: Transfer Target Recommendations
-        elif parsed_url.path == "/api/transfer-targets":
+        elif req_path == "/api/transfer-targets":
             try:
-                query = parse_qs(parsed_url.query)
                 el_type = int(query.get("type", [0])[0])
                 max_cost = int(query.get("max_cost", [2000])[0])
                 filter_team = int(query.get("team", [0])[0])

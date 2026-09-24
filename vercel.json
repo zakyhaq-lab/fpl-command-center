@@ -1,6 +1,10 @@
 {
   "rewrites": [
     {
+      "source": "/api/fpl-raw/(.*)",
+      "destination": "https://fantasy.premierleague.com/api/$1"
+    },
+    {
       "source": "/api/(.*)",
       "destination": "/api/index?__route=/api/$1"
     },

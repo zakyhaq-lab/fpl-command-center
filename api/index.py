@@ -7,7 +7,19 @@ import os
 from urllib.parse import urlparse, parse_qs
 
 BASE_URL = "https://fantasy.premierleague.com/api"
-HEADERS = {"User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)"}
+HEADERS = {
+    "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/129.0.0.0 Safari/537.36",
+    "Accept": "application/json, text/plain, */*",
+    "Accept-Language": "en-GB,en-US;q=0.9,en;q=0.8",
+    "Referer": "https://fantasy.premierleague.com/",
+    "Origin": "https://fantasy.premierleague.com",
+    "Sec-Ch-Ua": '"Google Chrome";v="129", "Not=A?Brand";v="8", "Chromium";v="129"',
+    "Sec-Ch-Ua-Mobile": "?0",
+    "Sec-Ch-Ua-Platform": '"macOS"',
+    "Sec-Fetch-Dest": "empty",
+    "Sec-Fetch-Mode": "cors",
+    "Sec-Fetch-Site": "same-origin",
+}
 
 # In-memory cache with TTL (in seconds)
 CACHE = {}
@@ -18,11 +30,35 @@ def fetch_json(url, ttl=300):
         data, ts = CACHE[url]
         if now - ts < ttl:
             return data
-    req = urllib.request.Request(url, headers=HEADERS)
-    with urllib.request.urlopen(req, timeout=12) as response:
-        data = json.loads(response.read().decode())
-        CACHE[url] = (data, now)
-        return data
+
+    user_agents = [
+        "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/129.0.0.0 Safari/537.36",
+        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/129.0.0.0 Safari/537.36",
+        "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:130.0) Gecko/20100101 Firefox/130.0",
+        "Mozilla/5.0 (iPhone; CPU iPhone OS 17_6_1 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.6 Mobile/15E148 Safari/604.1"
+    ]
+
+    last_err = None
+    for ua in user_agents:
+        h = dict(HEADERS)
+        h["User-Agent"] = ua
+        try:
+            req = urllib.request.Request(url, headers=h)
+            with urllib.request.urlopen(req, timeout=12) as response:
+                data = json.loads(response.read().decode())
+                CACHE[url] = (data, now)
+                return data
+        except urllib.error.HTTPError as he:
+            last_err = he
+            if he.code != 403:
+                raise he
+            continue
+        except Exception as e:
+            last_err = e
+            continue
+
+    if last_err:
+        raise last_err
 
 def calculate_free_transfers(history_current, chips=None):
     if not history_current:

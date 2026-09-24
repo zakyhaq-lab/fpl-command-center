@@ -1,0 +1,277 @@
+<svg width="1440" height="960" viewBox="0 0 1440 960" fill="none" xmlns="http://www.w3.org/2000/svg" style="background:#0B0F19; font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;">
+  <style>
+    .title { font-size: 20px; font-weight: 800; fill: #FFFFFF; }
+    .subtitle { font-size: 11px; fill: #9CA3AF; }
+    .badge-text { font-size: 11px; font-weight: 700; fill: #34D399; }
+    .card-title { font-size: 12px; font-weight: 700; fill: #FFFFFF; }
+    .card-meta { font-size: 10px; fill: #9CA3AF; }
+    .fdr-badge { font-size: 9px; font-weight: 700; }
+  </style>
+
+  <!-- TOPBAR -->
+  <rect x="40" y="30" width="1360" height="80" rx="14" fill="#111827" stroke="#1F2937"/>
+  
+  <!-- GW BADGE -->
+  <rect x="64" y="55" width="85" height="28" rx="6" fill="#064E3B" stroke="#059669"/>
+  <text x="76" y="73" class="badge-text">LIVE GW5</text>
+  
+  <text x="165" y="74" class="title">Maulana Zaky's Team</text>
+  <text x="400" y="74" class="subtitle">Manager: Maulana Zaky Haq • ID: 2805703</text>
+
+  <!-- STATS -->
+  <g transform="translate(860, 46)">
+    <!-- STAT 1 -->
+    <rect x="0" y="0" width="140" height="48" rx="8" fill="#0B0F19" stroke="#1F2937"/>
+    <text x="14" y="18" class="card-meta">OVERALL POINTS</text>
+    <text x="14" y="38" font-size="16" font-weight="800" fill="#34D399">321 Pts</text>
+
+    <!-- STAT 2 -->
+    <rect x="155" y="0" width="150" height="48" rx="8" fill="#0B0F19" stroke="#1F2937"/>
+    <text x="169" y="18" class="card-meta">OVERALL RANK</text>
+    <text x="169" y="38" font-size="16" font-weight="800" fill="#F3F4F6">#2,622,015</text>
+
+    <!-- STAT 3 -->
+    <rect x="320" y="0" width="140" height="48" rx="8" fill="#0B0F19" stroke="#1F2937"/>
+    <text x="334" y="18" class="card-meta">BANK BUDGET</text>
+    <text x="334" y="38" font-size="16" font-weight="800" fill="#FBBF24">£0.0m</text>
+  </g>
+
+  <!-- LEFT: FOOTBALL PITCH SECTION -->
+  <g transform="translate(40, 135)">
+    <!-- Pitch Frame -->
+    <rect x="0" y="0" width="760" height="630" rx="16" fill="#064E3B" stroke="#059669" stroke-width="2"/>
+    
+    <!-- Pitch Markings -->
+    <line x1="0" y1="315" x2="760" y2="315" stroke="#10B981" stroke-opacity="0.3" stroke-width="2"/>
+    <circle cx="380" cy="315" r="70" stroke="#10B981" stroke-opacity="0.3" stroke-width="2" fill="none"/>
+    <rect x="230" y="0" width="300" height="120" stroke="#10B981" stroke-opacity="0.3" stroke-width="2" fill="none"/>
+    <rect x="230" y="510" width="300" height="120" stroke="#10B981" stroke-opacity="0.3" stroke-width="2" fill="none"/>
+
+    <text x="24" y="32" font-size="13" font-weight="800" fill="#A7F3D0" letter-spacing="1">STARTING XI (3-5-2)</text>
+
+    <!-- FWD (2) -->
+    <!-- Haaland (C) -->
+    <g transform="translate(240, 60)">
+      <rect width="120" height="62" rx="8" fill="#0F172A" stroke="#F59E0B" stroke-width="2"/>
+      <rect x="92" y="6" width="20" height="16" rx="4" fill="#F59E0B"/>
+      <text x="98" y="18" font-size="10" font-weight="900" fill="#000">C</text>
+      <text x="10" y="18" font-size="9" font-weight="700" fill="#34D399">MCI</text>
+      <text x="10" y="36" class="card-title">Haaland</text>
+      <text x="10" y="52" class="card-meta">6 pts • £15.2m</text>
+    </g>
+
+    <!-- Calvert-Lewin -->
+    <g transform="translate(400, 60)">
+      <rect width="120" height="62" rx="8" fill="#0F172A" stroke="#10B981" stroke-opacity="0.4"/>
+      <text x="10" y="18" font-size="9" font-weight="700" fill="#34D399">EVE</text>
+      <text x="10" y="36" class="card-title">Calvert-L.</text>
+      <text x="10" y="52" class="card-meta">2 pts • £6.0m</text>
+    </g>
+
+    <!-- MID (5) -->
+    <!-- Groß -->
+    <g transform="translate(45, 195)">
+      <rect width="115" height="62" rx="8" fill="#0F172A" stroke="#10B981" stroke-opacity="0.4"/>
+      <text x="10" y="18" font-size="9" font-weight="700" fill="#34D399">BHA</text>
+      <text x="10" y="36" class="card-title">Groß</text>
+      <text x="10" y="52" class="card-meta">14 pts • £5.8m</text>
+    </g>
+    <!-- Saka -->
+    <g transform="translate(185, 195)">
+      <rect width="115" height="62" rx="8" fill="#0F172A" stroke="#10B981" stroke-opacity="0.4"/>
+      <text x="10" y="18" font-size="9" font-weight="700" fill="#34D399">ARS</text>
+      <text x="10" y="36" class="card-title">Saka</text>
+      <text x="10" y="52" class="card-meta">2 pts • £10.0m</text>
+    </g>
+    <!-- Mbeumo -->
+    <g transform="translate(325, 195)">
+      <rect width="115" height="62" rx="8" fill="#0F172A" stroke="#10B981" stroke-opacity="0.4"/>
+      <text x="10" y="18" font-size="9" font-weight="700" fill="#34D399">BRE</text>
+      <text x="10" y="36" class="card-title">Mbeumo</text>
+      <text x="10" y="52" class="card-meta">2 pts • £7.1m</text>
+    </g>
+    <!-- Rogers -->
+    <g transform="translate(465, 195)">
+      <rect width="115" height="62" rx="8" fill="#0F172A" stroke="#10B981" stroke-opacity="0.4"/>
+      <text x="10" y="18" font-size="9" font-weight="700" fill="#34D399">AVL</text>
+      <text x="10" y="36" class="card-title">Rogers</text>
+      <text x="10" y="52" class="card-meta">2 pts • £5.2m</text>
+    </g>
+    <!-- Anderson -->
+    <g transform="translate(605, 195)">
+      <rect width="115" height="62" rx="8" fill="#0F172A" stroke="#10B981" stroke-opacity="0.4"/>
+      <text x="10" y="18" font-size="9" font-weight="700" fill="#34D399">NFO</text>
+      <text x="10" y="36" class="card-title">Anderson</text>
+      <text x="10" y="52" class="card-meta">2 pts • £5.0m</text>
+    </g>
+
+    <!-- DEF (3) -->
+    <!-- Gabriel -->
+    <g transform="translate(125, 340)">
+      <rect width="130" height="62" rx="8" fill="#0F172A" stroke="#10B981" stroke-opacity="0.4"/>
+      <text x="10" y="18" font-size="9" font-weight="700" fill="#34D399">ARS</text>
+      <text x="10" y="36" class="card-title">Gabriel</text>
+      <text x="10" y="52" class="card-meta">1 pts • £6.1m</text>
+    </g>
+    <!-- Konsa -->
+    <g transform="translate(315, 340)">
+      <rect width="130" height="62" rx="8" fill="#0F172A" stroke="#10B981" stroke-opacity="0.4"/>
+      <text x="10" y="18" font-size="9" font-weight="700" fill="#34D399">AVL</text>
+      <text x="10" y="36" class="card-title">Konsa</text>
+      <text x="10" y="52" class="card-meta">1 pts • £4.5m</text>
+    </g>
+    <!-- Ajayi -->
+    <g transform="translate(505, 340)">
+      <rect width="130" height="62" rx="8" fill="#0F172A" stroke="#10B981" stroke-opacity="0.4"/>
+      <text x="10" y="18" font-size="9" font-weight="700" fill="#34D399">WBA</text>
+      <text x="10" y="36" class="card-title">Ajayi</text>
+      <text x="10" y="52" class="card-meta">1 pts • £4.0m</text>
+    </g>
+
+    <!-- GK (1) -->
+    <!-- Pickford -->
+    <g transform="translate(315, 490)">
+      <rect width="130" height="62" rx="8" fill="#0F172A" stroke="#10B981" stroke-opacity="0.4"/>
+      <text x="10" y="18" font-size="9" font-weight="700" fill="#34D399">EVE</text>
+      <text x="10" y="36" class="card-title">Pickford</text>
+      <text x="10" y="52" class="card-meta">8 pts • £5.0m</text>
+    </g>
+
+    <!-- BENCH TRAY -->
+    <g transform="translate(0, 645)">
+      <rect width="760" height="135" rx="14" fill="#111827" stroke="#1F2937"/>
+      <text x="24" y="26" font-size="11" font-weight="800" fill="#9CA3AF" letter-spacing="1">SUBSTITUTES (BENCH)</text>
+      
+      <!-- Virginia -->
+      <g transform="translate(24, 42)">
+        <rect width="160" height="68" rx="8" fill="#0B0F19" stroke="#1F2937"/>
+        <text x="12" y="20" font-size="9" font-weight="700" fill="#9CA3AF">GK • EVE</text>
+        <text x="12" y="38" class="card-title">Virginia</text>
+        <text x="12" y="56" class="card-meta">0 pts • £4.0m</text>
+      </g>
+      <!-- Harwood-Bellis -->
+      <g transform="translate(204, 42)">
+        <rect width="160" height="68" rx="8" fill="#0B0F19" stroke="#1F2937"/>
+        <text x="12" y="20" font-size="9" font-weight="700" fill="#9CA3AF">DEF • SOU</text>
+        <text x="12" y="38" class="card-title">Harwood-B.</text>
+        <text x="12" y="56" class="card-meta">1 pts • £4.0m</text>
+      </g>
+      <!-- Nedeljkovic -->
+      <g transform="translate(384, 42)">
+        <rect width="160" height="68" rx="8" fill="#0B0F19" stroke="#1F2937"/>
+        <text x="12" y="20" font-size="9" font-weight="700" fill="#9CA3AF">DEF • AVL</text>
+        <text x="12" y="38" class="card-title">Nedeljkovic</text>
+        <text x="12" y="56" class="card-meta">0 pts • £4.0m</text>
+      </g>
+      <!-- Fraser -->
+      <g transform="translate(564, 42)">
+        <rect width="160" height="68" rx="8" fill="#0B0F19" stroke="#1F2937"/>
+        <text x="12" y="20" font-size="9" font-weight="700" fill="#9CA3AF">FWD • WOL</text>
+        <text x="12" y="38" class="card-title">Fraser</text>
+        <text x="12" y="56" class="card-meta">0 pts • £4.5m</text>
+      </g>
+    </g>
+  </g>
+
+  <!-- RIGHT: TRANSFER PLANNER LAB -->
+  <g transform="translate(840, 135)">
+    <rect width="560" height="780" rx="16" fill="#111827" stroke="#1F2937"/>
+    
+    <text x="28" y="36" font-size="15" font-weight="800" fill="#FFFFFF">TRANSFER PLANNER LAB</text>
+    <text x="28" y="56" class="card-meta">Target rekomendasi pengganti berdasarkan FDR & performa</text>
+
+    <!-- Filter & Sort Bar -->
+    <rect x="28" y="75" width="240" height="34" rx="6" fill="#0B0F19" stroke="#374151"/>
+    <text x="40" y="97" font-size="11" fill="#D1D5DB">Semua Klub</text>
+    <rect x="284" y="75" width="248" height="34" rx="6" fill="#0B0F19" stroke="#374151"/>
+    <text x="296" y="97" font-size="11" fill="#34D399">Urutkan: Jadwal Termudah (FDR)</text>
+
+    <!-- Targets List -->
+    <!-- Row 1: Barnes -->
+    <g transform="translate(28, 128)">
+      <rect width="504" height="64" rx="10" fill="#0B0F19" stroke="#1F2937"/>
+      <text x="16" y="26" class="card-title">Barnes <tspan font-size="10" font-weight="400" fill="#9CA3AF">NEW</tspan></text>
+      <text x="16" y="46" class="card-meta">Form: 7.5 • £6.4m • 42 pts</text>
+      
+      <!-- FDR Chip -->
+      <rect x="300" y="19" width="95" height="26" rx="6" fill="#064E3B" stroke="#059669"/>
+      <text x="312" y="36" class="fdr-badge" fill="#34D399">COV (A) FDR 2</text>
+      
+      <!-- Swap Btn -->
+      <rect x="410" y="18" width="78" height="28" rx="6" fill="#10B981"/>
+      <text x="432" y="36" font-size="11" font-weight="800" fill="#000000">PILIH</text>
+    </g>
+
+    <!-- Row 2: Saka -->
+    <g transform="translate(28, 204)">
+      <rect width="504" height="64" rx="10" fill="#0B0F19" stroke="#1F2937"/>
+      <text x="16" y="26" class="card-title">Saka <tspan font-size="10" font-weight="400" fill="#9CA3AF">ARS</tspan></text>
+      <text x="16" y="46" class="card-meta">Form: 6.8 • £10.0m • 38 pts</text>
+      
+      <rect x="300" y="19" width="95" height="26" rx="6" fill="#064E3B" stroke="#059669"/>
+      <text x="312" y="36" class="fdr-badge" fill="#34D399">LEE (H) FDR 2</text>
+      
+      <rect x="410" y="18" width="78" height="28" rx="6" fill="#10B981"/>
+      <text x="432" y="36" font-size="11" font-weight="800" fill="#000000">PILIH</text>
+    </g>
+
+    <!-- Row 3: Palmer -->
+    <g transform="translate(28, 280)">
+      <rect width="504" height="64" rx="10" fill="#0B0F19" stroke="#1F2937"/>
+      <text x="16" y="26" class="card-title">Palmer <tspan font-size="10" font-weight="400" fill="#9CA3AF">CHE</tspan></text>
+      <text x="16" y="46" class="card-meta">Form: 8.2 • £10.6m • 48 pts</text>
+      
+      <rect x="300" y="19" width="95" height="26" rx="6" fill="#064E3B" stroke="#059669"/>
+      <text x="312" y="36" class="fdr-badge" fill="#34D399">BOU (A) FDR 2</text>
+      
+      <rect x="410" y="18" width="78" height="28" rx="6" fill="#10B981"/>
+      <text x="432" y="36" font-size="11" font-weight="800" fill="#000000">PILIH</text>
+    </g>
+
+    <!-- Row 4: Semenyo -->
+    <g transform="translate(28, 356)">
+      <rect width="504" height="64" rx="10" fill="#0B0F19" stroke="#1F2937"/>
+      <text x="16" y="26" class="card-title">Semenyo <tspan font-size="10" font-weight="400" fill="#9CA3AF">BOU</tspan></text>
+      <text x="16" y="46" class="card-meta">Form: 7.0 • £5.7m • 35 pts</text>
+      
+      <rect x="300" y="19" width="95" height="26" rx="6" fill="#374151" stroke="#4B5563"/>
+      <text x="312" y="36" class="fdr-badge" fill="#E5E7EB">CHE (H) FDR 3</text>
+      
+      <rect x="410" y="18" width="78" height="28" rx="6" fill="#10B981"/>
+      <text x="432" y="36" font-size="11" font-weight="800" fill="#000000">PILIH</text>
+    </g>
+
+    <!-- Impact Preview Box -->
+    <g transform="translate(28, 450)">
+      <rect width="504" height="290" rx="12" fill="#0B0F19" stroke="#059669" stroke-width="1.5"/>
+      <text x="20" y="30" font-size="13" font-weight="800" fill="#34D399">SIMULASI DAMPAK TRANSFER</text>
+      
+      <!-- Out vs In -->
+      <g transform="translate(20, 50)">
+        <rect width="220" height="50" rx="8" fill="#1E293B"/>
+        <text x="14" y="20" font-size="10" fill="#F43F5E" font-weight="700">TRANSFER OUT</text>
+        <text x="14" y="38" font-size="12" font-weight="700" fill="#FFF">Anderson (£5.0m)</text>
+      </g>
+      <g transform="translate(260, 50)">
+        <rect width="220" height="50" rx="8" fill="#1E293B"/>
+        <text x="14" y="20" font-size="10" fill="#34D399" font-weight="700">TRANSFER IN</text>
+        <text x="14" y="38" font-size="12" font-weight="700" fill="#FFF">Barnes (£6.4m)</text>
+      </g>
+
+      <!-- Impact Metrics -->
+      <line x1="20" y1="120" x2="480" y2="120" stroke="#1F2937"/>
+      
+      <text x="20" y="148" font-size="12" fill="#9CA3AF">Sisa Budget Bank:</text>
+      <text x="480" y="148" text-anchor="end" font-size="13" font-weight="700" fill="#F43F5E">-£1.4m (Defisit)</text>
+
+      <text x="20" y="180" font-size="12" fill="#9CA3AF">Kenaikan Form Performa:</text>
+      <text x="480" y="180" text-anchor="end" font-size="13" font-weight="700" fill="#34D399">+5.5 pts / match</text>
+
+      <text x="20" y="212" font-size="12" fill="#9CA3AF">Jadwal Lawan Berikutnya:</text>
+      <text x="480" y="212" text-anchor="end" font-size="13" font-weight="700" fill="#34D399">COV (A) • FDR 2 (Mudah)</text>
+
+      <rect x="20" y="235" width="464" height="38" rx="8" fill="#064E3B"/>
+      <text x="252" y="259" text-anchor="middle" font-size="11" font-weight="700" fill="#34D399">Rekomendasi: Upgrade bernilai tinggi jika budget mencukupi</text>
+    </g>
+  </g>
+</svg>

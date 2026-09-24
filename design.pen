@@ -1,0 +1,994 @@
+{
+  "version": "2.6",
+  "children": [
+    {
+      "type": "frame",
+      "id": "427156",
+      "name": "FPL Live Command Center (1440x960)",
+      "x": 0,
+      "y": 0,
+      "width": 1440,
+      "height": 960,
+      "fill": "#0B0F19",
+      "layout": "none",
+      "clip": true,
+      "children": [
+        {
+          "type": "frame",
+          "id": "202115",
+          "name": "Topbar",
+          "x": 40,
+          "y": 30,
+          "width": 1360,
+          "height": 80,
+          "fill": "#111827",
+          "cornerRadius": 12,
+          "stroke": "#1F2937",
+          "children": [
+            {
+              "type": "text",
+              "id": "96404a",
+              "name": "LiveBadge",
+              "x": 24,
+              "y": 30,
+              "width": 90,
+              "height": 24,
+              "content": "LIVE GW5",
+              "fontSize": 12,
+              "fontWeight": "800",
+              "fill": "#34D399"
+            },
+            {
+              "type": "text",
+              "id": "e9f076",
+              "name": "TeamTitle",
+              "x": 130,
+              "y": 28,
+              "width": 260,
+              "height": 26,
+              "content": "Maulana Zaky's Team",
+              "fontSize": 20,
+              "fontWeight": "800",
+              "fill": "#FFFFFF"
+            },
+            {
+              "type": "text",
+              "id": "a238a9",
+              "name": "ManagerSub",
+              "x": 400,
+              "y": 32,
+              "width": 300,
+              "height": 20,
+              "content": "Manager: Maulana Zaky Haq \u2022 ID: 2805703",
+              "fontSize": 12,
+              "fill": "#9CA3AF"
+            },
+            {
+              "type": "text",
+              "id": "a0fd02",
+              "name": "StatPoints",
+              "x": 880,
+              "y": 28,
+              "width": 140,
+              "height": 26,
+              "content": "321 Pts (Overall)",
+              "fontSize": 15,
+              "fontWeight": "700",
+              "fill": "#34D399"
+            },
+            {
+              "type": "text",
+              "id": "935107",
+              "name": "StatRank",
+              "x": 1050,
+              "y": 28,
+              "width": 150,
+              "height": 26,
+              "content": "Rank #2,622,015",
+              "fontSize": 15,
+              "fontWeight": "700",
+              "fill": "#F3F4F6"
+            },
+            {
+              "type": "text",
+              "id": "f67d1a",
+              "name": "StatBank",
+              "x": 1220,
+              "y": 28,
+              "width": 110,
+              "height": 26,
+              "content": "Bank \u00a30.0m",
+              "fontSize": 15,
+              "fontWeight": "700",
+              "fill": "#FBBF24"
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "7910cb",
+          "name": "Starting XI Football Pitch",
+          "x": 40,
+          "y": 135,
+          "width": 760,
+          "height": 640,
+          "fill": "#064E3B",
+          "cornerRadius": 16,
+          "stroke": "#059669",
+          "children": [
+            {
+              "type": "text",
+              "id": "11f78e",
+              "name": "PitchTitle",
+              "x": 24,
+              "y": 20,
+              "width": 300,
+              "height": 20,
+              "content": "STARTING XI FORMATION (3-5-2)",
+              "fontSize": 13,
+              "fontWeight": "800",
+              "fill": "#A7F3D0"
+            },
+            {
+              "type": "frame",
+              "id": "48df02",
+              "name": "Haaland (C)",
+              "x": 240,
+              "y": 60,
+              "width": 120,
+              "height": 64,
+              "fill": "#0F172A",
+              "cornerRadius": 8,
+              "stroke": "#F59E0B",
+              "children": [
+                {
+                  "type": "text",
+                  "id": "8a5f73",
+                  "name": "Name",
+                  "x": 10,
+                  "y": 10,
+                  "width": 100,
+                  "height": 18,
+                  "content": "MCI \u2022 Haaland (C)",
+                  "fontSize": 11,
+                  "fontWeight": "700",
+                  "fill": "#F59E0B"
+                },
+                {
+                  "type": "text",
+                  "id": "ca13ca",
+                  "name": "Meta",
+                  "x": 10,
+                  "y": 36,
+                  "width": 100,
+                  "height": 18,
+                  "content": "6 pts \u2022 \u00a315.2m",
+                  "fontSize": 10,
+                  "fill": "#9CA3AF"
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "e9e66d",
+              "name": "Calvert-Lewin",
+              "x": 400,
+              "y": 60,
+              "width": 120,
+              "height": 64,
+              "fill": "#0F172A",
+              "cornerRadius": 8,
+              "stroke": "#10B981",
+              "children": [
+                {
+                  "type": "text",
+                  "id": "aeb829",
+                  "name": "Name",
+                  "x": 10,
+                  "y": 10,
+                  "width": 100,
+                  "height": 18,
+                  "content": "EVE \u2022 Calvert-L.",
+                  "fontSize": 11,
+                  "fontWeight": "700",
+                  "fill": "#34D399"
+                },
+                {
+                  "type": "text",
+                  "id": "edefef",
+                  "name": "Meta",
+                  "x": 10,
+                  "y": 36,
+                  "width": 100,
+                  "height": 18,
+                  "content": "2 pts \u2022 \u00a36.0m",
+                  "fontSize": 10,
+                  "fill": "#9CA3AF"
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "7f810a",
+              "name": "Gross",
+              "x": 45,
+              "y": 200,
+              "width": 115,
+              "height": 64,
+              "fill": "#0F172A",
+              "cornerRadius": 8,
+              "stroke": "#10B981",
+              "children": [
+                {
+                  "type": "text",
+                  "id": "eeed3b",
+                  "name": "Name",
+                  "x": 8,
+                  "y": 10,
+                  "width": 100,
+                  "height": 18,
+                  "content": "BHA \u2022 Gro\u00df",
+                  "fontSize": 11,
+                  "fontWeight": "700",
+                  "fill": "#34D399"
+                },
+                {
+                  "type": "text",
+                  "id": "fe965e",
+                  "name": "Meta",
+                  "x": 8,
+                  "y": 36,
+                  "width": 100,
+                  "height": 18,
+                  "content": "14 pts \u2022 \u00a35.8m",
+                  "fontSize": 10,
+                  "fill": "#9CA3AF"
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "3f6e71",
+              "name": "Saka",
+              "x": 185,
+              "y": 200,
+              "width": 115,
+              "height": 64,
+              "fill": "#0F172A",
+              "cornerRadius": 8,
+              "stroke": "#10B981",
+              "children": [
+                {
+                  "type": "text",
+                  "id": "b34252",
+                  "name": "Name",
+                  "x": 8,
+                  "y": 10,
+                  "width": 100,
+                  "height": 18,
+                  "content": "ARS \u2022 Saka",
+                  "fontSize": 11,
+                  "fontWeight": "700",
+                  "fill": "#34D399"
+                },
+                {
+                  "type": "text",
+                  "id": "58b2dd",
+                  "name": "Meta",
+                  "x": 8,
+                  "y": 36,
+                  "width": 100,
+                  "height": 18,
+                  "content": "2 pts \u2022 \u00a310.0m",
+                  "fontSize": 10,
+                  "fill": "#9CA3AF"
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "4b3c75",
+              "name": "Mbeumo",
+              "x": 325,
+              "y": 200,
+              "width": 115,
+              "height": 64,
+              "fill": "#0F172A",
+              "cornerRadius": 8,
+              "stroke": "#10B981",
+              "children": [
+                {
+                  "type": "text",
+                  "id": "711929",
+                  "name": "Name",
+                  "x": 8,
+                  "y": 10,
+                  "width": 100,
+                  "height": 18,
+                  "content": "BRE \u2022 Mbeumo",
+                  "fontSize": 11,
+                  "fontWeight": "700",
+                  "fill": "#34D399"
+                },
+                {
+                  "type": "text",
+                  "id": "8b31f0",
+                  "name": "Meta",
+                  "x": 8,
+                  "y": 36,
+                  "width": 100,
+                  "height": 18,
+                  "content": "2 pts \u2022 \u00a37.1m",
+                  "fontSize": 10,
+                  "fill": "#9CA3AF"
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "8adee0",
+              "name": "Rogers",
+              "x": 465,
+              "y": 200,
+              "width": 115,
+              "height": 64,
+              "fill": "#0F172A",
+              "cornerRadius": 8,
+              "stroke": "#10B981",
+              "children": [
+                {
+                  "type": "text",
+                  "id": "070138",
+                  "name": "Name",
+                  "x": 8,
+                  "y": 10,
+                  "width": 100,
+                  "height": 18,
+                  "content": "AVL \u2022 Rogers",
+                  "fontSize": 11,
+                  "fontWeight": "700",
+                  "fill": "#34D399"
+                },
+                {
+                  "type": "text",
+                  "id": "f48c88",
+                  "name": "Meta",
+                  "x": 8,
+                  "y": 36,
+                  "width": 100,
+                  "height": 18,
+                  "content": "2 pts \u2022 \u00a35.2m",
+                  "fontSize": 10,
+                  "fill": "#9CA3AF"
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "d407c7",
+              "name": "Anderson",
+              "x": 605,
+              "y": 200,
+              "width": 115,
+              "height": 64,
+              "fill": "#0F172A",
+              "cornerRadius": 8,
+              "stroke": "#10B981",
+              "children": [
+                {
+                  "type": "text",
+                  "id": "ed8575",
+                  "name": "Name",
+                  "x": 8,
+                  "y": 10,
+                  "width": 100,
+                  "height": 18,
+                  "content": "NFO \u2022 Anderson",
+                  "fontSize": 11,
+                  "fontWeight": "700",
+                  "fill": "#34D399"
+                },
+                {
+                  "type": "text",
+                  "id": "1b31c8",
+                  "name": "Meta",
+                  "x": 8,
+                  "y": 36,
+                  "width": 100,
+                  "height": 18,
+                  "content": "2 pts \u2022 \u00a35.0m",
+                  "fontSize": 10,
+                  "fill": "#9CA3AF"
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "404ada",
+              "name": "Gabriel",
+              "x": 125,
+              "y": 350,
+              "width": 130,
+              "height": 64,
+              "fill": "#0F172A",
+              "cornerRadius": 8,
+              "stroke": "#10B981",
+              "children": [
+                {
+                  "type": "text",
+                  "id": "1973b5",
+                  "name": "Name",
+                  "x": 10,
+                  "y": 10,
+                  "width": 110,
+                  "height": 18,
+                  "content": "ARS \u2022 Gabriel",
+                  "fontSize": 11,
+                  "fontWeight": "700",
+                  "fill": "#34D399"
+                },
+                {
+                  "type": "text",
+                  "id": "69aa8c",
+                  "name": "Meta",
+                  "x": 10,
+                  "y": 36,
+                  "width": 110,
+                  "height": 18,
+                  "content": "1 pts \u2022 \u00a36.1m",
+                  "fontSize": 10,
+                  "fill": "#9CA3AF"
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "a38efb",
+              "name": "Konsa",
+              "x": 315,
+              "y": 350,
+              "width": 130,
+              "height": 64,
+              "fill": "#0F172A",
+              "cornerRadius": 8,
+              "stroke": "#10B981",
+              "children": [
+                {
+                  "type": "text",
+                  "id": "62a29e",
+                  "name": "Name",
+                  "x": 10,
+                  "y": 10,
+                  "width": 110,
+                  "height": 18,
+                  "content": "AVL \u2022 Konsa",
+                  "fontSize": 11,
+                  "fontWeight": "700",
+                  "fill": "#34D399"
+                },
+                {
+                  "type": "text",
+                  "id": "67e2ef",
+                  "name": "Meta",
+                  "x": 10,
+                  "y": 36,
+                  "width": 110,
+                  "height": 18,
+                  "content": "1 pts \u2022 \u00a34.5m",
+                  "fontSize": 10,
+                  "fill": "#9CA3AF"
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "d71cfe",
+              "name": "Ajayi",
+              "x": 505,
+              "y": 350,
+              "width": 130,
+              "height": 64,
+              "fill": "#0F172A",
+              "cornerRadius": 8,
+              "stroke": "#10B981",
+              "children": [
+                {
+                  "type": "text",
+                  "id": "574966",
+                  "name": "Name",
+                  "x": 10,
+                  "y": 10,
+                  "width": 110,
+                  "height": 18,
+                  "content": "WBA \u2022 Ajayi",
+                  "fontSize": 11,
+                  "fontWeight": "700",
+                  "fill": "#34D399"
+                },
+                {
+                  "type": "text",
+                  "id": "23e2b1",
+                  "name": "Meta",
+                  "x": 10,
+                  "y": 36,
+                  "width": 110,
+                  "height": 18,
+                  "content": "1 pts \u2022 \u00a34.0m",
+                  "fontSize": 10,
+                  "fill": "#9CA3AF"
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "580c7f",
+              "name": "Pickford",
+              "x": 315,
+              "y": 500,
+              "width": 130,
+              "height": 64,
+              "fill": "#0F172A",
+              "cornerRadius": 8,
+              "stroke": "#10B981",
+              "children": [
+                {
+                  "type": "text",
+                  "id": "378471",
+                  "name": "Name",
+                  "x": 10,
+                  "y": 10,
+                  "width": 110,
+                  "height": 18,
+                  "content": "EVE \u2022 Pickford",
+                  "fontSize": 11,
+                  "fontWeight": "700",
+                  "fill": "#34D399"
+                },
+                {
+                  "type": "text",
+                  "id": "e87bda",
+                  "name": "Meta",
+                  "x": 10,
+                  "y": 36,
+                  "width": 110,
+                  "height": 18,
+                  "content": "8 pts \u2022 \u00a35.0m",
+                  "fontSize": 10,
+                  "fill": "#9CA3AF"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "454209",
+          "name": "Bench Tray",
+          "x": 40,
+          "y": 795,
+          "width": 760,
+          "height": 135,
+          "fill": "#111827",
+          "cornerRadius": 14,
+          "stroke": "#1F2937",
+          "children": [
+            {
+              "type": "text",
+              "id": "4d405c",
+              "name": "BenchTitle",
+              "x": 20,
+              "y": 16,
+              "width": 200,
+              "height": 18,
+              "content": "BENCH SUBSTITUTES",
+              "fontSize": 11,
+              "fontWeight": "800",
+              "fill": "#9CA3AF"
+            },
+            {
+              "type": "frame",
+              "id": "a1a4ab",
+              "name": "Virginia",
+              "x": 20,
+              "y": 42,
+              "width": 160,
+              "height": 68,
+              "fill": "#0B0F19",
+              "cornerRadius": 8,
+              "stroke": "#1F2937",
+              "children": [
+                {
+                  "type": "text",
+                  "id": "75d475",
+                  "name": "T",
+                  "x": 12,
+                  "y": 12,
+                  "width": 130,
+                  "height": 18,
+                  "content": "Virginia (GK)",
+                  "fontSize": 12,
+                  "fontWeight": "700",
+                  "fill": "#FFF"
+                },
+                {
+                  "type": "text",
+                  "id": "2fe75c",
+                  "name": "M",
+                  "x": 12,
+                  "y": 38,
+                  "width": 130,
+                  "height": 18,
+                  "content": "EVE \u2022 \u00a34.0m",
+                  "fontSize": 10,
+                  "fill": "#9CA3AF"
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "295546",
+              "name": "Harwood",
+              "x": 200,
+              "y": 42,
+              "width": 160,
+              "height": 68,
+              "fill": "#0B0F19",
+              "cornerRadius": 8,
+              "stroke": "#1F2937",
+              "children": [
+                {
+                  "type": "text",
+                  "id": "00a8e9",
+                  "name": "T",
+                  "x": 12,
+                  "y": 12,
+                  "width": 130,
+                  "height": 18,
+                  "content": "Harwood-B. (DEF)",
+                  "fontSize": 12,
+                  "fontWeight": "700",
+                  "fill": "#FFF"
+                },
+                {
+                  "type": "text",
+                  "id": "358078",
+                  "name": "M",
+                  "x": 12,
+                  "y": 38,
+                  "width": 130,
+                  "height": 18,
+                  "content": "SOU \u2022 \u00a34.0m",
+                  "fontSize": 10,
+                  "fill": "#9CA3AF"
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "c13942",
+              "name": "Nedeljkovic",
+              "x": 380,
+              "y": 42,
+              "width": 160,
+              "height": 68,
+              "fill": "#0B0F19",
+              "cornerRadius": 8,
+              "stroke": "#1F2937",
+              "children": [
+                {
+                  "type": "text",
+                  "id": "050318",
+                  "name": "T",
+                  "x": 12,
+                  "y": 12,
+                  "width": 130,
+                  "height": 18,
+                  "content": "Nedeljkovic (DEF)",
+                  "fontSize": 12,
+                  "fontWeight": "700",
+                  "fill": "#FFF"
+                },
+                {
+                  "type": "text",
+                  "id": "14a08c",
+                  "name": "M",
+                  "x": 12,
+                  "y": 38,
+                  "width": 130,
+                  "height": 18,
+                  "content": "AVL \u2022 \u00a34.0m",
+                  "fontSize": 10,
+                  "fill": "#9CA3AF"
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "68bb2a",
+              "name": "Fraser",
+              "x": 560,
+              "y": 42,
+              "width": 160,
+              "height": 68,
+              "fill": "#0B0F19",
+              "cornerRadius": 8,
+              "stroke": "#1F2937",
+              "children": [
+                {
+                  "type": "text",
+                  "id": "41d4cf",
+                  "name": "T",
+                  "x": 12,
+                  "y": 12,
+                  "width": 130,
+                  "height": 18,
+                  "content": "Fraser (FWD)",
+                  "fontSize": 12,
+                  "fontWeight": "700",
+                  "fill": "#FFF"
+                },
+                {
+                  "type": "text",
+                  "id": "54744c",
+                  "name": "M",
+                  "x": 12,
+                  "y": 38,
+                  "width": 130,
+                  "height": 18,
+                  "content": "WOL \u2022 \u00a34.5m",
+                  "fontSize": 10,
+                  "fill": "#9CA3AF"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "609be7",
+          "name": "Transfer Planner Lab",
+          "x": 840,
+          "y": 135,
+          "width": 560,
+          "height": 795,
+          "fill": "#111827",
+          "cornerRadius": 16,
+          "stroke": "#1F2937",
+          "children": [
+            {
+              "type": "text",
+              "id": "b450c0",
+              "name": "Title",
+              "x": 28,
+              "y": 24,
+              "width": 300,
+              "height": 22,
+              "content": "TRANSFER PLANNER LAB",
+              "fontSize": 16,
+              "fontWeight": "800",
+              "fill": "#FFFFFF"
+            },
+            {
+              "type": "text",
+              "id": "270804",
+              "name": "Sub",
+              "x": 28,
+              "y": 48,
+              "width": 400,
+              "height": 18,
+              "content": "Rekomendasi pengganti berdasar FDR & performa",
+              "fontSize": 11,
+              "fill": "#9CA3AF"
+            },
+            {
+              "type": "frame",
+              "id": "42a66c",
+              "name": "Target Barnes",
+              "x": 28,
+              "y": 80,
+              "width": 504,
+              "height": 70,
+              "fill": "#0B0F19",
+              "cornerRadius": 10,
+              "stroke": "#1F2937",
+              "children": [
+                {
+                  "type": "text",
+                  "id": "bb4869",
+                  "name": "Name",
+                  "x": 16,
+                  "y": 14,
+                  "width": 250,
+                  "height": 20,
+                  "content": "Barnes (NEW) \u2022 \u00a36.4m",
+                  "fontSize": 13,
+                  "fontWeight": "700",
+                  "fill": "#FFF"
+                },
+                {
+                  "type": "text",
+                  "id": "4cbe3e",
+                  "name": "Meta",
+                  "x": 16,
+                  "y": 38,
+                  "width": 350,
+                  "height": 18,
+                  "content": "Form: 7.5 \u2022 Lawan: COV (A) FDR 2 (Mudah)",
+                  "fontSize": 11,
+                  "fill": "#34D399"
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "9e7dda",
+              "name": "Target Saka",
+              "x": 28,
+              "y": 165,
+              "width": 504,
+              "height": 70,
+              "fill": "#0B0F19",
+              "cornerRadius": 10,
+              "stroke": "#1F2937",
+              "children": [
+                {
+                  "type": "text",
+                  "id": "a991c5",
+                  "name": "Name",
+                  "x": 16,
+                  "y": 14,
+                  "width": 250,
+                  "height": 20,
+                  "content": "Saka (ARS) \u2022 \u00a310.0m",
+                  "fontSize": 13,
+                  "fontWeight": "700",
+                  "fill": "#FFF"
+                },
+                {
+                  "type": "text",
+                  "id": "94e0a7",
+                  "name": "Meta",
+                  "x": 16,
+                  "y": 38,
+                  "width": 350,
+                  "height": 18,
+                  "content": "Form: 6.8 \u2022 Lawan: LEE (H) FDR 2 (Mudah)",
+                  "fontSize": 11,
+                  "fill": "#34D399"
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "dacd4c",
+              "name": "Target Palmer",
+              "x": 28,
+              "y": 250,
+              "width": 504,
+              "height": 70,
+              "fill": "#0B0F19",
+              "cornerRadius": 10,
+              "stroke": "#1F2937",
+              "children": [
+                {
+                  "type": "text",
+                  "id": "2e2866",
+                  "name": "Name",
+                  "x": 16,
+                  "y": 14,
+                  "width": 250,
+                  "height": 20,
+                  "content": "Palmer (CHE) \u2022 \u00a310.6m",
+                  "fontSize": 13,
+                  "fontWeight": "700",
+                  "fill": "#FFF"
+                },
+                {
+                  "type": "text",
+                  "id": "0d21bb",
+                  "name": "Meta",
+                  "x": 16,
+                  "y": 38,
+                  "width": 350,
+                  "height": 18,
+                  "content": "Form: 8.2 \u2022 Lawan: BOU (A) FDR 2 (Mudah)",
+                  "fontSize": 11,
+                  "fill": "#34D399"
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "9563a4",
+              "name": "Simulasi Dampak",
+              "x": 28,
+              "y": 345,
+              "width": 504,
+              "height": 420,
+              "fill": "#0B0F19",
+              "cornerRadius": 12,
+              "stroke": "#059669",
+              "children": [
+                {
+                  "type": "text",
+                  "id": "96d22a",
+                  "name": "Head",
+                  "x": 20,
+                  "y": 24,
+                  "width": 300,
+                  "height": 20,
+                  "content": "SIMULASI DAMPAK TRANSFER",
+                  "fontSize": 13,
+                  "fontWeight": "800",
+                  "fill": "#34D399"
+                },
+                {
+                  "type": "text",
+                  "id": "766e11",
+                  "name": "Out",
+                  "x": 20,
+                  "y": 65,
+                  "width": 300,
+                  "height": 20,
+                  "content": "OUT: Anderson (\u00a35.0m, NFO)",
+                  "fontSize": 12,
+                  "fontWeight": "700",
+                  "fill": "#F43F5E"
+                },
+                {
+                  "type": "text",
+                  "id": "b2ff1d",
+                  "name": "In",
+                  "x": 20,
+                  "y": 95,
+                  "width": 300,
+                  "height": 20,
+                  "content": "IN: Barnes (\u00a36.4m, NEW)",
+                  "fontSize": 12,
+                  "fontWeight": "700",
+                  "fill": "#34D399"
+                },
+                {
+                  "type": "text",
+                  "id": "e155e6",
+                  "name": "Form",
+                  "x": 20,
+                  "y": 140,
+                  "width": 350,
+                  "height": 20,
+                  "content": "Perubahan Form: +5.5 poin / pertandingan",
+                  "fontSize": 12,
+                  "fill": "#D1D5DB"
+                },
+                {
+                  "type": "text",
+                  "id": "058160",
+                  "name": "Next",
+                  "x": 20,
+                  "y": 170,
+                  "width": 350,
+                  "height": 20,
+                  "content": "Jadwal Lawan: COV (A) \u2022 Tingkat Kesulitan FDR 2",
+                  "fontSize": 12,
+                  "fill": "#34D399"
+                },
+                {
+                  "type": "text",
+                  "id": "f0b975",
+                  "name": "Bank",
+                  "x": 20,
+                  "y": 200,
+                  "width": 450,
+                  "height": 20,
+                  "content": "Sisa Budget Bank: -\u00a31.4m (Defisit jika tanpa transfer lain)",
+                  "fontSize": 12,
+                  "fill": "#FBBF24"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

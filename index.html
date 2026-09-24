@@ -320,15 +320,15 @@
               </span>
             </div>
             <h1 class="text-xl sm:text-2xl font-black tracking-tight text-white mt-1 flex items-center gap-2" id="header-team-name">
-              Maulana Zaky's Team
+              FPL Tactical Hub
             </h1>
             <p class="text-xs text-slate-400 flex flex-wrap items-center gap-2 mt-0.5">
-              <span>Manager: <strong class="text-slate-200" id="header-manager-name">Maulana Zaky Haq</strong></span>
+              <span>Manager: <strong class="text-slate-200" id="header-manager-name">Belum Terhubung</strong></span>
               <span class="text-white/20">•</span>
-              <span>Team ID: <span class="font-mono text-pl-green font-semibold" id="header-team-id">2805703</span></span>
-              <button onclick="openLoginModal()" class="px-2 py-0.5 rounded-md bg-white/10 hover:bg-pl-green hover:text-slate-950 text-slate-200 text-[10px] font-bold transition inline-flex items-center gap-1 cursor-pointer border border-white/10" title="Ganti Tim FPL">
+              <span>Team ID: <span class="font-mono text-pl-green font-semibold" id="header-team-id">-</span></span>
+              <button onclick="openLoginModal()" class="px-2 py-0.5 rounded-md bg-white/10 hover:bg-pl-green hover:text-slate-950 text-slate-200 text-[10px] font-bold transition inline-flex items-center gap-1 cursor-pointer border border-white/10" title="Hubungkan / Ganti Tim FPL">
                 <svg class="w-2.5 h-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"/></svg>
-                <span>Ganti Tim</span>
+                <span>Hubungkan Tim</span>
               </button>
               <span class="text-white/20">•</span>
               <span class="text-slate-300">🇮🇩 Indonesia</span>
@@ -341,43 +341,43 @@
           <!-- Total Points -->
           <div class="glass-panel p-2.5 rounded-xl border border-white/10 text-center relative overflow-hidden group hover:border-pl-green/50 transition">
             <span class="text-[10px] font-extrabold uppercase tracking-wider text-slate-400">Total Poin</span>
-            <div class="text-lg sm:text-xl font-black font-mono text-pl-green mt-0.5" id="stat-total-points">321</div>
+            <div class="text-lg sm:text-xl font-black font-mono text-pl-green mt-0.5" id="stat-total-points">-</div>
             <div class="text-[9px] text-slate-400">Kumulatif</div>
           </div>
 
           <!-- Overall Rank -->
           <div class="glass-panel p-2.5 rounded-xl border border-white/10 text-center relative overflow-hidden group hover:border-white/30 transition">
             <span class="text-[10px] font-extrabold uppercase tracking-wider text-slate-400">Overall Rank</span>
-            <div class="text-lg sm:text-xl font-black font-mono text-white mt-0.5" id="stat-overall-rank">#2,622,015</div>
-            <div class="text-[9px] text-emerald-400 font-semibold" id="stat-rank-percentile">Top 24% Global</div>
+            <div class="text-lg sm:text-xl font-black font-mono text-white mt-0.5" id="stat-overall-rank">-</div>
+            <div class="text-[9px] text-emerald-400 font-semibold" id="stat-rank-percentile">-</div>
           </div>
 
           <!-- GW Points -->
           <div class="glass-panel p-2.5 rounded-xl border border-white/10 text-center relative overflow-hidden group hover:border-cyan-400/50 transition">
-            <span class="text-[10px] font-extrabold uppercase tracking-wider text-slate-400">GW5 Points</span>
-            <div class="text-lg sm:text-xl font-black font-mono text-cyan-400 mt-0.5" id="stat-gw-points">47 Pts</div>
-            <div class="text-[9px] text-slate-400" id="stat-gw-rank">Rank: 5.8M</div>
+            <span class="text-[10px] font-extrabold uppercase tracking-wider text-slate-400">GW Points</span>
+            <div class="text-lg sm:text-xl font-black font-mono text-cyan-400 mt-0.5" id="stat-gw-points">-</div>
+            <div class="text-[9px] text-slate-400" id="stat-gw-rank">-</div>
           </div>
 
           <!-- Bank Balance -->
           <div class="glass-panel p-2.5 rounded-xl border border-white/10 text-center relative overflow-hidden group hover:border-pl-gold/50 transition">
             <span class="text-[10px] font-extrabold uppercase tracking-wider text-slate-400">In The Bank</span>
-            <div class="text-lg sm:text-xl font-black font-mono text-pl-gold mt-0.5" id="stat-bank-balance">£1.8m</div>
+            <div class="text-lg sm:text-xl font-black font-mono text-pl-gold mt-0.5" id="stat-bank-balance">-</div>
             <div class="text-[9px] text-yellow-300/80">Saldo Transfer</div>
           </div>
 
           <!-- Squad Value -->
           <div class="glass-panel p-2.5 rounded-xl border border-white/10 text-center relative overflow-hidden group hover:border-purple-400/50 transition">
             <span class="text-[10px] font-extrabold uppercase tracking-wider text-slate-400">Squad Value</span>
-            <div class="text-lg sm:text-xl font-black font-mono text-purple-300 mt-0.5" id="stat-squad-value">£100.4m</div>
+            <div class="text-lg sm:text-xl font-black font-mono text-purple-300 mt-0.5" id="stat-squad-value">-</div>
             <div class="text-[9px] text-slate-400">Valuasi Tim</div>
           </div>
 
           <!-- Free Transfers -->
           <div class="glass-panel p-2.5 rounded-xl border border-white/10 text-center relative overflow-hidden group hover:border-pink-400/50 transition">
             <span class="text-[10px] font-extrabold uppercase tracking-wider text-slate-400">Free Transfer</span>
-            <div class="text-lg sm:text-xl font-black font-mono text-pl-pink mt-0.5" id="stat-free-transfers">1 FT</div>
-            <div class="text-[9px] text-slate-400 font-medium" id="stat-deadline-subtitle">Deadline GW6</div>
+            <div class="text-lg sm:text-xl font-black font-mono text-pl-pink mt-0.5" id="stat-free-transfers">-</div>
+            <div class="text-[9px] text-slate-400 font-medium" id="stat-deadline-subtitle">Deadline</div>
           </div>
         </div>
 
@@ -519,7 +519,7 @@
             <div>
               <div class="flex items-center gap-2">
                 <span class="px-2.5 py-0.5 rounded-full text-[11px] font-black uppercase tracking-wider bg-pl-green/15 text-pl-green border border-pl-green/30" id="pitch-formation-badge">
-                  FORMASI 3-5-2
+                  FORMASI --
                 </span>
                 <span class="text-xs text-slate-400">Starting XI Matchday</span>
               </div>
@@ -557,7 +557,7 @@
               <div class="flex items-center gap-2">
                 <div class="text-right text-xs">
                   <span class="text-slate-400 text-[10px] uppercase font-bold block">Poin Skuad Ini</span>
-                  <span class="font-mono font-black text-pl-green text-sm" id="pitch-total-points">47 Pts</span>
+                  <span class="font-mono font-black text-pl-green text-sm" id="pitch-total-points">-</span>
                 </div>
                 <div class="h-7 w-[1px] bg-white/10"></div>
                 <div class="text-right text-xs">
@@ -593,7 +593,14 @@
 
             <!-- MID Row -->
             <div class="flex justify-center items-center gap-2 sm:gap-3 flex-wrap z-10 my-auto py-2" id="pitch-mid">
-              <!-- Dynamically Populated -->
+              <div class="text-center py-10 px-4 glass-panel rounded-2xl border border-white/10 max-w-sm mx-auto my-auto z-10">
+                <div class="text-3xl mb-2">🏟️</div>
+                <h3 class="text-white font-black text-sm mb-1">Belum Ada Tim Terhubung</h3>
+                <p class="text-slate-400 text-xs mb-3">Hubungkan FPL Team ID kamu untuk memuat susunan Starting XI, cadangan, dan taktik transfer.</p>
+                <button onclick="openLoginModal()" class="px-4 py-2 rounded-xl bg-pl-green text-slate-950 font-black text-xs hover:bg-emerald-400 transition shadow-lg shadow-pl-green/20 cursor-pointer">
+                  Hubungkan Tim FPL ⚡
+                </button>
+              </div>
             </div>
 
             <!-- DEF Row -->
@@ -615,7 +622,7 @@
                 <span class="text-[10px] font-black uppercase tracking-wider text-slate-300">Dugout Substitutes (Cadangan)</span>
                 <span class="text-[10px] px-2 py-0.5 rounded-full bg-white/5 border border-white/10 text-slate-400">Urutan Otomatis</span>
               </div>
-              <span class="text-xs font-mono font-bold text-slate-400" id="bench-points-total">13 Pts di Bench</span>
+              <span class="text-xs font-mono font-bold text-slate-400" id="bench-points-total">-</span>
             </div>
 
             <div class="grid grid-cols-2 sm:grid-cols-4 gap-2.5" id="pitch-bench">
@@ -1017,8 +1024,8 @@
               </div>
               <div>
                 <span class="text-[9px] font-mono tracking-widest text-pl-green font-extrabold uppercase block">FPL COMMAND CENTER • MATCHDAY</span>
-                <h4 class="text-base font-black text-white leading-tight" id="exp-team-name">Maulana Zaky's Team</h4>
-                <p class="text-[10px] text-slate-400">Manager: <strong class="text-slate-200" id="exp-manager-name">Maulana Zaky Haq</strong></p>
+                <h4 class="text-base font-black text-white leading-tight" id="exp-team-name">FPL Matchday Squad</h4>
+                <p class="text-[10px] text-slate-400">Manager: <strong class="text-slate-200" id="exp-manager-name">-</strong></p>
               </div>
             </div>
             <div class="text-right">
@@ -1118,7 +1125,7 @@
             <input 
               type="text" 
               id="login-input-id" 
-              placeholder="Contoh: 2805703 atau fantasy.premierleague.com/entry/2805703/..." 
+              placeholder="Contoh: 1234567 atau fantasy.premierleague.com/entry/1234567/..." 
               class="w-full px-3.5 py-2.5 rounded-xl bg-black/40 border border-white/20 text-white placeholder-slate-500 focus:outline-none focus:border-pl-green focus:ring-1 focus:ring-pl-green font-mono text-xs transition pr-8"
               onkeydown="if(event.key === 'Enter') handleConnectSubmit()"
             >
@@ -1140,27 +1147,6 @@
             <span id="btn-login-text">Hubungkan Tim Sekarang</span>
           </button>
         </div>
-
-        <!-- Quick Demo Option -->
-        <div class="flex items-center gap-2">
-          <div class="flex-1 h-px bg-white/10"></div>
-          <span class="text-[10px] uppercase font-bold text-slate-500 tracking-wider">Atau Coba Demo</span>
-          <div class="flex-1 h-px bg-white/10"></div>
-        </div>
-
-        <button 
-          onclick="connectDemoTeam()" 
-          class="w-full p-2.5 rounded-2xl bg-white/5 hover:bg-white/10 border border-white/10 hover:border-white/20 text-left transition flex items-center justify-between group cursor-pointer"
-        >
-          <div class="flex items-center gap-2.5">
-            <span class="text-xl">🎮</span>
-            <div>
-              <div class="font-bold text-white group-hover:text-pl-green transition">Coba Akun Demo (Maulana Zaky)</div>
-              <div class="text-[10px] text-slate-400">Team ID: <span class="font-mono text-slate-300">2805703</span> • 321 Pts (GW5)</div>
-            </div>
-          </div>
-          <span class="text-xs text-pl-green font-bold group-hover:translate-x-1 transition">Pakai ➔</span>
-        </button>
 
         <!-- Saved / Recent Accounts Switcher -->
         <div id="recent-teams-section" class="hidden pt-1">
@@ -1199,7 +1185,7 @@
             <div class="flex items-start gap-2">
               <span class="w-4 h-4 rounded-full bg-white/10 text-white font-mono flex items-center justify-center flex-shrink-0 text-[9px] font-bold mt-0.5">3</span>
               <span>Lihat address bar URL di browser kamu. Formatnya seperti ini:<br>
-                <code class="text-pl-green bg-black/40 px-1.5 py-0.5 rounded font-mono text-[10px] block mt-1 break-all">fantasy.premierleague.com/entry/<strong>2805703</strong>/event/5</code>
+                <code class="text-pl-green bg-black/40 px-1.5 py-0.5 rounded font-mono text-[10px] block mt-1 break-all">fantasy.premierleague.com/entry/<strong>1234567</strong>/event/5</code>
               </span>
             </div>
             <div class="flex items-start gap-2">
@@ -2460,7 +2446,6 @@
     // ==========================================
     const STORAGE_KEY_TEAM = 'fpl_team_id';
     const STORAGE_KEY_RECENTS = 'fpl_recent_teams';
-    const DEFAULT_DEMO_ID = '2805703';
 
     function getRecentTeams() {
       try {
@@ -2503,7 +2488,7 @@
       const listEl = document.getElementById('recent-teams-list');
       if (!container || !listEl) return;
 
-      const currentId = localStorage.getItem(STORAGE_KEY_TEAM) || DEFAULT_DEMO_ID;
+      const currentId = localStorage.getItem(STORAGE_KEY_TEAM) || '';
       const list = getRecentTeams();
       if (list.length === 0) {
         container.classList.add('hidden');
@@ -2579,12 +2564,6 @@
       if (modal) modal.classList.add('hidden');
     }
 
-    function connectDemoTeam() {
-      const input = document.getElementById('login-input-id');
-      if (input) input.value = DEFAULT_DEMO_ID;
-      handleConnectSubmit();
-    }
-
     async function handleConnectSubmit() {
       const input = document.getElementById('login-input-id');
       const statusBox = document.getElementById('login-status-box');
@@ -2597,7 +2576,7 @@
       if (!teamId) {
         if (statusBox) {
           statusBox.className = 'p-2.5 rounded-xl text-xs font-semibold bg-rose-500/20 text-rose-300 border border-rose-500/40';
-          statusBox.innerHTML = '⚠️ Format tidak valid. Masukkan angka Team ID (contoh: 2805703) atau paste link URL FPL kamu.';
+          statusBox.innerHTML = '⚠️ Format tidak valid. Masukkan angka Team ID (contoh: 1234567) atau paste link URL FPL kamu.';
           statusBox.classList.remove('hidden');
         }
         return;
@@ -2641,9 +2620,13 @@
 
     // Refresh Data Handler
     function refreshData() {
+      const currentId = localStorage.getItem(STORAGE_KEY_TEAM);
+      if (!currentId) {
+        openLoginModal(true);
+        return;
+      }
       const icon = document.getElementById('refresh-icon');
       if (icon) icon.classList.add('animate-spin');
-      const currentId = localStorage.getItem(STORAGE_KEY_TEAM) || DEFAULT_DEMO_ID;
       loadData(currentId).then(() => {
         setTimeout(() => {
           if (icon) icon.classList.remove('animate-spin');
@@ -2653,8 +2636,13 @@
 
     // Main Data Loading Pipeline
     async function loadData(targetTeamId = null) {
-      const teamId = targetTeamId || localStorage.getItem(STORAGE_KEY_TEAM) || DEFAULT_DEMO_ID;
+      const teamId = targetTeamId || localStorage.getItem(STORAGE_KEY_TEAM);
       const statusBox = document.getElementById('login-status-box');
+
+      if (!teamId) {
+        openLoginModal(true);
+        return false;
+      }
 
       try {
         const res = await fetch(`/api/user-team?id=${teamId}`);
@@ -2762,10 +2750,8 @@
     setTheme(currentTheme);
     const initialSavedTeam = localStorage.getItem(STORAGE_KEY_TEAM);
     if (!initialSavedTeam) {
-      // First time visitor: load default demo team, then gently open login modal to prompt connecting their team
-      loadData(DEFAULT_DEMO_ID).then(() => {
-        openLoginModal(false);
-      });
+      // First time visitor: prompt user to connect their FPL team
+      openLoginModal(true);
     } else {
       loadData(initialSavedTeam);
     }

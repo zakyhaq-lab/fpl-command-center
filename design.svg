@@ -15,8 +15,8 @@
   <rect x="64" y="55" width="85" height="28" rx="6" fill="#064E3B" stroke="#059669"/>
   <text x="76" y="73" class="badge-text">LIVE GW5</text>
   
-  <text x="165" y="74" class="title">Maulana Zaky's Team</text>
-  <text x="400" y="74" class="subtitle">Manager: Maulana Zaky Haq • ID: 2805703</text>
+  <text x="165" y="74" class="title">FPL Command Center</text>
+  <text x="400" y="74" class="subtitle">Manager: FPL Manager • ID: 1234567</text>
 
   <!-- STATS -->
   <g transform="translate(860, 46)">

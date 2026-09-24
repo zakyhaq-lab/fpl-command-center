@@ -8,7 +8,6 @@ A high-tech, live broadcast dashboard and tactical transfer planner for Fantasy 
   - Seamless 1-click team connect using your numeric FPL **Team ID** or by pasting any official FPL team URL link.
   - Zero password entry ensures 100% security with no risk of credential theft or API rate-limit bans.
   - **Multi-Account Switcher & History:** Remembers up to 6 recently used FPL accounts in browser `localStorage` with 1-click instant switching and delete option.
-  - **One-Click Demo Mode:** Instant access to Maulana Zaky's team (`2805703`) for exploration and testing.
   - **Interactive Visual Guide:** Built-in accordion tutorial showing managers how to find their Team ID on `fantasy.premierleague.com`.
 - **Live Official FPL API Sync:** Direct real-time connection with FPL for team squad picks, current gameweek live points, overall rank, percentile, and bank balance.
 - **Live Theme Switcher & Visual Palettes:**

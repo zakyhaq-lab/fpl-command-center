@@ -105,7 +105,15 @@ class handler(BaseHTTPRequestHandler):
                         curr_event = ev.get("id", 5)
                         break
 
-                team_id = query.get("id", ["2805703"])[0]
+                team_id = query.get("id", [""])[0].strip()
+                if not team_id or not team_id.isdigit():
+                    self.send_response(400)
+                    self.send_header("Content-Type", "application/json; charset=utf-8")
+                    self.send_header("Access-Control-Allow-Origin", "*")
+                    self.end_headers()
+                    self.wfile.write(json.dumps({"error": "FPL Team ID diperlukan. Silakan masukkan Team ID tim FPL Anda."}).encode())
+                    return
+
                 entry_data = fetch_json(f"{BASE_URL}/entry/{team_id}/", ttl=180)
                 curr_event = entry_data.get("current_event", curr_event)
                 hist_data = fetch_json(f"{BASE_URL}/entry/{team_id}/history/", ttl=180)

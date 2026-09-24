@@ -24,6 +24,28 @@ def fetch_json(url, ttl=300):
         CACHE[url] = (data, now)
         return data
 
+def calculate_free_transfers(history_current, chips=None):
+    if not history_current:
+        return 1
+    chips_by_event = {c.get("event"): c.get("name") for c in (chips or [])}
+    curr_ft = 1
+    for h in history_current:
+        ev = h.get("event", 1)
+        if ev == 1:
+            curr_ft = 1
+            continue
+        chip = chips_by_event.get(ev)
+        if chip in ("wildcard", "freehit"):
+            used = 0
+        else:
+            made = h.get("event_transfers", 0)
+            cost = h.get("event_transfers_cost", 0)
+            used = max(0, made - (cost // 4))
+        curr_ft = max(0, curr_ft - used)
+        # In FPL 2024/25, up to 5 FT can be banked
+        curr_ft = min(5, curr_ft + 1)
+    return max(1, min(5, curr_ft))
+
 def get_html_page():
     candidates = [
         os.path.join(os.getcwd(), "public", "index.html"),
@@ -291,6 +313,7 @@ class handler(BaseHTTPRequestHandler):
                         "squad_alerts": squad_alerts
                     },
                     "history": hist_data,
+                    "free_transfers": calculate_free_transfers(hist_data.get("current", []), hist_data.get("chips", [])),
                     "leagues": entry_data.get("leagues", {}).get("classic", []),
                     "teams": [{"id": t["id"], "name": t["name"], "short_name": t["short_name"], "code": t["code"]} for t in static_data.get("teams", [])],
                     "picks": picks_enriched

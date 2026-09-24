@@ -2441,6 +2441,32 @@
         .replace(/'/g, '&#039;');
     }
 
+    // Helper: Calculate Free Transfers for Upcoming Gameweek (FPL 2024/25 Rules)
+    function computeFreeTransfers(historyData) {
+      if (!historyData || !historyData.current || historyData.current.length === 0) return 1;
+      const chips = historyData.chips || [];
+      const chipsMap = {};
+      chips.forEach(c => { chipsMap[c.event] = c.name; });
+
+      let ft = 1;
+      historyData.current.forEach(h => {
+        if (h.event === 1) {
+          ft = 1;
+          return;
+        }
+        const chip = chipsMap[h.event];
+        let used = 0;
+        if (chip !== 'wildcard' && chip !== 'freehit') {
+          const made = h.event_transfers || 0;
+          const cost = h.event_transfers_cost || 0;
+          used = Math.max(0, made - Math.floor(cost / 4));
+        }
+        ft = Math.max(0, ft - used);
+        ft = Math.min(5, ft + 1); // FPL 2024/25 max banked FT is 5
+      });
+      return Math.max(1, Math.min(5, ft));
+    }
+
     // ==========================================
     // FPL TEAM CONNECT / LOGIN (SSO) LOGIC
     // ==========================================
@@ -2712,6 +2738,18 @@
           if (bankEl) bankEl.innerText = `£${(lastGw.bank / 10).toFixed(1)}m`;
           const valEl = document.getElementById('stat-squad-value');
           if (valEl) valEl.innerText = `£${(lastGw.value / 10).toFixed(1)}m`;
+        }
+
+        // Fill Free Transfers
+        const ftEl = document.getElementById('stat-free-transfers');
+        if (ftEl) {
+          let ft = 1;
+          if (appData.free_transfers !== undefined) {
+            ft = appData.free_transfers;
+          } else if (appData.history) {
+            ft = computeFreeTransfers(appData.history);
+          }
+          ftEl.innerText = `${ft} FT`;
         }
 
         // Reset simulation on team switch

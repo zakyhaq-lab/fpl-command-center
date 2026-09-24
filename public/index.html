@@ -1690,11 +1690,6 @@
             <span class="font-extrabold text-pl-gold">${p.event_points} Pts</span>
             <span class="text-slate-400">£${(p.now_cost / 10).toFixed(1)}m</span>
           </div>
-
-          <!-- Hover Hint (Positioned safely below card) -->
-          <div class="hidden group-hover:block absolute top-full mt-1.5 left-1/2 -translate-x-1/2 bg-[#070417]/95 border border-pl-green text-pl-green text-[9px] font-bold px-2 py-0.5 rounded shadow-xl whitespace-nowrap z-40 pointer-events-none">
-            ${isSelected ? 'Pemain Terpilih' : 'Klik: Ganti Pemain'}
-          </div>
         </div>
       `;
     }

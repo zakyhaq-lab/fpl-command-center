@@ -322,10 +322,14 @@
             <h1 class="text-xl sm:text-2xl font-black tracking-tight text-white mt-1 flex items-center gap-2" id="header-team-name">
               Maulana Zaky's Team
             </h1>
-            <p class="text-xs text-slate-400 flex items-center gap-2 mt-0.5">
+            <p class="text-xs text-slate-400 flex flex-wrap items-center gap-2 mt-0.5">
               <span>Manager: <strong class="text-slate-200" id="header-manager-name">Maulana Zaky Haq</strong></span>
               <span class="text-white/20">•</span>
-              <span>Team ID: <span class="font-mono text-pl-green font-semibold">2805703</span></span>
+              <span>Team ID: <span class="font-mono text-pl-green font-semibold" id="header-team-id">2805703</span></span>
+              <button onclick="openLoginModal()" class="px-2 py-0.5 rounded-md bg-white/10 hover:bg-pl-green hover:text-slate-950 text-slate-200 text-[10px] font-bold transition inline-flex items-center gap-1 cursor-pointer border border-white/10" title="Ganti Tim FPL">
+                <svg class="w-2.5 h-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"/></svg>
+                <span>Ganti Tim</span>
+              </button>
               <span class="text-white/20">•</span>
               <span class="text-slate-300">🇮🇩 Indonesia</span>
             </p>
@@ -397,6 +401,12 @@
             Simulasi Aktif (<span id="sim-transfers-count">0</span> Swap)
             <button onclick="resetSimulation()" class="ml-1 text-[11px] underline text-white hover:text-pink-200">Reset</button>
           </div>
+
+          <!-- Account SSO / Connect Team Button -->
+          <button onclick="openLoginModal()" id="btn-header-login" class="px-3 py-1.5 rounded-xl bg-pl-green/15 hover:bg-pl-green text-pl-green hover:text-slate-950 border border-pl-green/30 text-xs font-bold flex items-center gap-1.5 transition cursor-pointer shadow-lg shadow-pl-green/10" title="Hubungkan Akun / Ganti Tim FPL">
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>
+            <span id="nav-btn-account-label">Akun FPL</span>
+          </button>
 
           <!-- Theme Switcher Dropdown -->
           <div class="relative z-50" id="theme-dropdown-container">
@@ -1054,6 +1064,157 @@
 
         </div>
 
+      </div>
+
+    </div>
+  </div>
+
+  <!-- LOGIN & TEAM CONNECT PORTAL MODAL (SSO) -->
+  <div id="login-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/85 backdrop-blur-md modal-backdrop">
+    <div class="glass-panel w-full max-w-lg rounded-3xl border border-white/20 p-5 sm:p-7 shadow-2xl relative overflow-hidden flex flex-col max-h-[92vh]">
+      
+      <!-- Ambient Glow Behind Modal -->
+      <div class="absolute -top-20 -left-20 w-48 h-48 bg-pl-purple rounded-full blur-3xl opacity-60 pointer-events-none"></div>
+      <div class="absolute -bottom-20 -right-20 w-48 h-48 bg-pl-green rounded-full blur-3xl opacity-25 pointer-events-none"></div>
+
+      <!-- Close button -->
+      <button onclick="closeLoginModal()" id="btn-login-close" class="absolute top-4 right-4 w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-slate-300 hover:text-white transition cursor-pointer z-10" title="Tutup">
+        ✕
+      </button>
+
+      <!-- Modal Header -->
+      <div class="relative z-10 flex items-center gap-3.5 mb-4">
+        <div class="w-12 h-12 rounded-2xl bg-gradient-to-br from-pl-purple via-[#56005d] to-[#1c0024] p-[2px] shadow-xl flex-shrink-0 flex items-center justify-center">
+          <div class="w-full h-full bg-[#120728] rounded-2xl flex items-center justify-center border border-white/10">
+            <svg class="w-7 h-7 text-pl-green filter drop-shadow-[0_0_6px_rgba(0,255,135,0.7)]" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 3c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3zm0 14.2c-2.5 0-4.71-1.28-6-3.22.03-1.99 4-3.08 6-3.08 1.99 0 5.97 1.09 6 3.08-1.29 1.94-3.5 3.22-6 3.22z"/>
+            </svg>
+          </div>
+        </div>
+        <div>
+          <div class="flex items-center gap-2">
+            <span class="text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-pl-green/15 text-pl-green border border-pl-green/30">
+              FPL Team Connect
+            </span>
+            <span class="text-[10px] font-semibold text-slate-400">100% Aman • No Password</span>
+          </div>
+          <h2 class="text-xl font-black text-white tracking-tight mt-0.5">Hubungkan Tim FPL Kamu</h2>
+        </div>
+      </div>
+
+      <!-- Modal Body (Scrollable) -->
+      <div class="overflow-y-auto pr-1 flex-1 space-y-4 relative z-10 text-xs text-slate-300">
+        
+        <p class="text-slate-300 leading-relaxed text-xs">
+          Masukkan <strong>Team ID</strong> FPL kamu atau tempel (paste) <strong>link URL</strong> halaman profil FPL kamu. Skuad dan statistik timmu akan langsung disinkronkan secara real-time!
+        </p>
+
+        <!-- Input Form -->
+        <div class="bg-white/5 rounded-2xl p-3.5 border border-white/10 space-y-3">
+          <label class="block text-xs font-bold text-slate-200">
+            FPL Team ID atau URL Link Profil:
+          </label>
+          <div class="relative">
+            <input 
+              type="text" 
+              id="login-input-id" 
+              placeholder="Contoh: 2805703 atau fantasy.premierleague.com/entry/2805703/..." 
+              class="w-full px-3.5 py-2.5 rounded-xl bg-black/40 border border-white/20 text-white placeholder-slate-500 focus:outline-none focus:border-pl-green focus:ring-1 focus:ring-pl-green font-mono text-xs transition pr-8"
+              onkeydown="if(event.key === 'Enter') handleConnectSubmit()"
+            >
+            <button onclick="document.getElementById('login-input-id').value = '';" class="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white text-xs cursor-pointer" title="Hapus teks">
+              ✕
+            </button>
+          </div>
+
+          <!-- Status Message Box (Error/Loading/Success) -->
+          <div id="login-status-box" class="hidden p-2.5 rounded-xl text-xs font-semibold"></div>
+
+          <!-- Submit Button -->
+          <button 
+            onclick="handleConnectSubmit()" 
+            id="btn-login-submit" 
+            class="w-full py-2.5 rounded-xl bg-pl-green hover:bg-emerald-400 text-slate-950 font-black text-xs transition flex items-center justify-center gap-2 shadow-lg shadow-pl-green/20 cursor-pointer"
+          >
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+            <span id="btn-login-text">Hubungkan Tim Sekarang</span>
+          </button>
+        </div>
+
+        <!-- Quick Demo Option -->
+        <div class="flex items-center gap-2">
+          <div class="flex-1 h-px bg-white/10"></div>
+          <span class="text-[10px] uppercase font-bold text-slate-500 tracking-wider">Atau Coba Demo</span>
+          <div class="flex-1 h-px bg-white/10"></div>
+        </div>
+
+        <button 
+          onclick="connectDemoTeam()" 
+          class="w-full p-2.5 rounded-2xl bg-white/5 hover:bg-white/10 border border-white/10 hover:border-white/20 text-left transition flex items-center justify-between group cursor-pointer"
+        >
+          <div class="flex items-center gap-2.5">
+            <span class="text-xl">🎮</span>
+            <div>
+              <div class="font-bold text-white group-hover:text-pl-green transition">Coba Akun Demo (Maulana Zaky)</div>
+              <div class="text-[10px] text-slate-400">Team ID: <span class="font-mono text-slate-300">2805703</span> • 321 Pts (GW5)</div>
+            </div>
+          </div>
+          <span class="text-xs text-pl-green font-bold group-hover:translate-x-1 transition">Pakai ➔</span>
+        </button>
+
+        <!-- Saved / Recent Accounts Switcher -->
+        <div id="recent-teams-section" class="hidden pt-1">
+          <div class="flex items-center justify-between mb-2">
+            <span class="text-[10px] font-black uppercase tracking-wider text-slate-400">Akun Tersimpan di Browser</span>
+            <span class="text-[9px] text-slate-500">1-Klik Ganti</span>
+          </div>
+          <div id="recent-teams-list" class="space-y-1.5">
+            <!-- Injected via JS -->
+          </div>
+        </div>
+
+        <!-- Guide Accordion: Cara Cek Team ID -->
+        <div class="border border-white/10 rounded-2xl overflow-hidden bg-white/[0.02]">
+          <button 
+            type="button"
+            onclick="toggleGuideAccordion()" 
+            class="w-full p-3 text-left font-bold text-slate-200 hover:text-white flex items-center justify-between transition cursor-pointer"
+          >
+            <div class="flex items-center gap-2">
+              <span class="text-amber-400">❓</span>
+              <span class="text-xs">Di mana saya bisa melihat FPL Team ID saya?</span>
+            </div>
+            <svg id="guide-arrow" class="w-4 h-4 text-slate-400 transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+          </button>
+          
+          <div id="guide-content" class="hidden p-3 pt-0 text-[11px] text-slate-400 space-y-2 border-t border-white/5">
+            <div class="flex items-start gap-2 pt-2">
+              <span class="w-4 h-4 rounded-full bg-white/10 text-white font-mono flex items-center justify-center flex-shrink-0 text-[9px] font-bold mt-0.5">1</span>
+              <span>Buka website resmi <strong>fantasy.premierleague.com</strong> di browser dan login ke akunmu.</span>
+            </div>
+            <div class="flex items-start gap-2">
+              <span class="w-4 h-4 rounded-full bg-white/10 text-white font-mono flex items-center justify-center flex-shrink-0 text-[9px] font-bold mt-0.5">2</span>
+              <span>Klik tab menu <strong>"Points"</strong> atau <strong>"Pick Team"</strong>.</span>
+            </div>
+            <div class="flex items-start gap-2">
+              <span class="w-4 h-4 rounded-full bg-white/10 text-white font-mono flex items-center justify-center flex-shrink-0 text-[9px] font-bold mt-0.5">3</span>
+              <span>Lihat address bar URL di browser kamu. Formatnya seperti ini:<br>
+                <code class="text-pl-green bg-black/40 px-1.5 py-0.5 rounded font-mono text-[10px] block mt-1 break-all">fantasy.premierleague.com/entry/<strong>2805703</strong>/event/5</code>
+              </span>
+            </div>
+            <div class="flex items-start gap-2">
+              <span class="w-4 h-4 rounded-full bg-white/10 text-white font-mono flex items-center justify-center flex-shrink-0 text-[9px] font-bold mt-0.5">4</span>
+              <span>Angka setelah <code class="text-slate-300 font-mono">/entry/</code> adalah <strong>Team ID</strong> kamu. Copy angka tersebut atau copy seluruh URL dan paste ke kotak input di atas!</span>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Modal Footer Note -->
+      <div class="mt-4 pt-3 border-t border-white/10 text-[10px] text-slate-500 text-center flex items-center justify-center gap-1.5">
+        <svg class="w-3.5 h-3.5 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
+        <span>Data disinkronkan langsung via Public API Resmi Premier League tanpa menyimpan password akunmu.</span>
       </div>
 
     </div>
@@ -2283,71 +2444,331 @@
       });
     }
 
+    // Helper: Escape HTML string
+    function escapeHtml(str) {
+      if (!str) return '';
+      return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+    }
+
+    // ==========================================
+    // FPL TEAM CONNECT / LOGIN (SSO) LOGIC
+    // ==========================================
+    const STORAGE_KEY_TEAM = 'fpl_team_id';
+    const STORAGE_KEY_RECENTS = 'fpl_recent_teams';
+    const DEFAULT_DEMO_ID = '2805703';
+
+    function getRecentTeams() {
+      try {
+        return JSON.parse(localStorage.getItem(STORAGE_KEY_RECENTS) || '[]');
+      } catch (e) {
+        return [];
+      }
+    }
+
+    function saveRecentTeam(id, teamName, managerName) {
+      let list = getRecentTeams();
+      list = list.filter(t => String(t.id) !== String(id));
+      list.unshift({
+        id: String(id),
+        name: teamName || `Team #${id}`,
+        manager: managerName || 'Manager',
+        time: Date.now()
+      });
+      list = list.slice(0, 6);
+      localStorage.setItem(STORAGE_KEY_RECENTS, JSON.stringify(list));
+      renderRecentTeams();
+    }
+
+    function removeRecentTeam(e, id) {
+      if (e) e.stopPropagation();
+      let list = getRecentTeams();
+      list = list.filter(t => String(t.id) !== String(id));
+      localStorage.setItem(STORAGE_KEY_RECENTS, JSON.stringify(list));
+      renderRecentTeams();
+    }
+
+    function selectRecentTeam(id) {
+      const input = document.getElementById('login-input-id');
+      if (input) input.value = id;
+      handleConnectSubmit();
+    }
+
+    function renderRecentTeams() {
+      const container = document.getElementById('recent-teams-section');
+      const listEl = document.getElementById('recent-teams-list');
+      if (!container || !listEl) return;
+
+      const currentId = localStorage.getItem(STORAGE_KEY_TEAM) || DEFAULT_DEMO_ID;
+      const list = getRecentTeams();
+      if (list.length === 0) {
+        container.classList.add('hidden');
+        return;
+      }
+      container.classList.remove('hidden');
+      listEl.innerHTML = list.map(item => {
+        const isCurrent = String(item.id) === String(currentId);
+        return `
+          <div onclick="selectRecentTeam('${item.id}')" class="p-2.5 rounded-xl bg-white/5 hover:bg-white/10 border ${isCurrent ? 'border-pl-green/50 bg-pl-green/10 shadow-sm' : 'border-white/10'} flex items-center justify-between transition cursor-pointer group">
+            <div class="flex items-center gap-2.5">
+              <span class="text-base">${isCurrent ? '⭐' : '👤'}</span>
+              <div class="text-left">
+                <div class="font-bold text-white group-hover:text-pl-green transition text-xs flex items-center gap-1.5">
+                  <span>${escapeHtml(item.name)}</span>
+                  ${isCurrent ? '<span class="text-[9px] px-1.5 py-0.5 bg-pl-green/20 text-pl-green rounded-full font-mono font-bold">Aktif</span>' : ''}
+                </div>
+                <div class="text-[10px] text-slate-400">
+                  ${escapeHtml(item.manager)} • ID: <span class="font-mono text-slate-300 font-bold">${item.id}</span>
+                </div>
+              </div>
+            </div>
+            <div class="flex items-center gap-1.5">
+              <span class="text-[10px] text-pl-green font-bold opacity-0 group-hover:opacity-100 transition mr-1">Pilih ➔</span>
+              <button onclick="removeRecentTeam(event, '${item.id}')" class="w-6 h-6 rounded-lg hover:bg-rose-500/20 text-slate-500 hover:text-rose-300 flex items-center justify-center transition cursor-pointer" title="Hapus dari riwayat">
+                ✕
+              </button>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function extractTeamId(val) {
+      if (!val) return null;
+      val = String(val).trim();
+      const urlMatch = val.match(/\/entry\/(\d+)/i);
+      if (urlMatch) return urlMatch[1];
+      const digitMatch = val.match(/^\d+$/);
+      if (digitMatch) return digitMatch[0];
+      const anyDigits = val.match(/(\d{4,9})/);
+      if (anyDigits) return anyDigits[1];
+      return null;
+    }
+
+    function toggleGuideAccordion() {
+      const content = document.getElementById('guide-content');
+      const arrow = document.getElementById('guide-arrow');
+      if (!content) return;
+      if (content.classList.contains('hidden')) {
+        content.classList.remove('hidden');
+        if (arrow) arrow.classList.add('rotate-180');
+      } else {
+        content.classList.add('hidden');
+        if (arrow) arrow.classList.remove('rotate-180');
+      }
+    }
+
+    function openLoginModal(isMandatory = false) {
+      const modal = document.getElementById('login-modal');
+      const input = document.getElementById('login-input-id');
+      const statusBox = document.getElementById('login-status-box');
+
+      if (statusBox) statusBox.classList.add('hidden');
+      if (input) input.value = localStorage.getItem(STORAGE_KEY_TEAM) || '';
+
+      renderRecentTeams();
+      if (modal) modal.classList.remove('hidden');
+    }
+
+    function closeLoginModal() {
+      const modal = document.getElementById('login-modal');
+      if (modal) modal.classList.add('hidden');
+    }
+
+    function connectDemoTeam() {
+      const input = document.getElementById('login-input-id');
+      if (input) input.value = DEFAULT_DEMO_ID;
+      handleConnectSubmit();
+    }
+
+    async function handleConnectSubmit() {
+      const input = document.getElementById('login-input-id');
+      const statusBox = document.getElementById('login-status-box');
+      const btnText = document.getElementById('btn-login-text');
+      const btnSubmit = document.getElementById('btn-login-submit');
+
+      const rawVal = input ? input.value : '';
+      const teamId = extractTeamId(rawVal);
+
+      if (!teamId) {
+        if (statusBox) {
+          statusBox.className = 'p-2.5 rounded-xl text-xs font-semibold bg-rose-500/20 text-rose-300 border border-rose-500/40';
+          statusBox.innerHTML = '⚠️ Format tidak valid. Masukkan angka Team ID (contoh: 2805703) atau paste link URL FPL kamu.';
+          statusBox.classList.remove('hidden');
+        }
+        return;
+      }
+
+      // Loading state
+      if (btnSubmit) btnSubmit.disabled = true;
+      if (btnText) btnText.innerHTML = '<span class="inline-block animate-spin mr-1">🌀</span> Memverifikasi ke FPL...';
+      if (statusBox) {
+        statusBox.className = 'p-2.5 rounded-xl text-xs font-semibold bg-cyan-500/20 text-cyan-300 border border-cyan-500/40';
+        statusBox.innerHTML = `🔄 Menghubungkan ID <strong>${teamId}</strong> ke Fantasy Premier League...`;
+        statusBox.classList.remove('hidden');
+      }
+
+      try {
+        const success = await loadData(teamId);
+        if (success) {
+          if (statusBox) {
+            statusBox.className = 'p-2.5 rounded-xl text-xs font-semibold bg-emerald-500/20 text-emerald-300 border border-emerald-500/40';
+            statusBox.innerHTML = `✅ Berhasil terhubung ke tim <strong>${escapeHtml(appData?.entry?.name || teamId)}</strong>!`;
+          }
+          setTimeout(() => {
+            closeLoginModal();
+            if (btnSubmit) btnSubmit.disabled = false;
+            if (btnText) btnText.innerText = 'Hubungkan Tim Sekarang';
+          }, 600);
+        } else {
+          if (btnSubmit) btnSubmit.disabled = false;
+          if (btnText) btnText.innerText = 'Hubungkan Tim Sekarang';
+        }
+      } catch (err) {
+        if (btnSubmit) btnSubmit.disabled = false;
+        if (btnText) btnText.innerText = 'Hubungkan Tim Sekarang';
+        if (statusBox) {
+          statusBox.className = 'p-2.5 rounded-xl text-xs font-semibold bg-rose-500/20 text-rose-300 border border-rose-500/40';
+          statusBox.innerHTML = `❌ Gagal: ${err.message || 'Tim tidak dapat dimuat.'}`;
+          statusBox.classList.remove('hidden');
+        }
+      }
+    }
+
     // Refresh Data Handler
     function refreshData() {
       const icon = document.getElementById('refresh-icon');
-      icon.classList.add('animate-spin');
-      loadData().then(() => {
-        setTimeout(() => icon.classList.remove('animate-spin'), 600);
+      if (icon) icon.classList.add('animate-spin');
+      const currentId = localStorage.getItem(STORAGE_KEY_TEAM) || DEFAULT_DEMO_ID;
+      loadData(currentId).then(() => {
+        setTimeout(() => {
+          if (icon) icon.classList.remove('animate-spin');
+        }, 600);
       });
     }
 
     // Main Data Loading Pipeline
-    async function loadData() {
+    async function loadData(targetTeamId = null) {
+      const teamId = targetTeamId || localStorage.getItem(STORAGE_KEY_TEAM) || DEFAULT_DEMO_ID;
+      const statusBox = document.getElementById('login-status-box');
+
       try {
-        const res = await fetch('/api/user-team?id=2805703');
+        const res = await fetch(`/api/user-team?id=${teamId}`);
+        if (!res.ok) {
+          const errJson = await res.json().catch(() => ({}));
+          const errMsg = errJson.error || `HTTP ${res.status}: Gagal memuat data tim ID ${teamId}`;
+          if (statusBox) {
+            statusBox.className = 'p-2.5 rounded-xl text-xs font-semibold bg-rose-500/20 text-rose-300 border border-rose-500/40';
+            statusBox.innerHTML = `❌ ${errMsg}`;
+            statusBox.classList.remove('hidden');
+          } else {
+            alert(errMsg);
+          }
+          return false;
+        }
+
         appData = await res.json();
+        localStorage.setItem(STORAGE_KEY_TEAM, String(teamId));
+
+        // Save to Recent Teams History
+        if (appData.entry) {
+          saveRecentTeam(teamId, appData.entry.name, `${appData.entry.player_first_name} ${appData.entry.player_last_name}`);
+        }
 
         // Populate Teams Dropdown
         const teamSelect = document.getElementById('filter-team');
-        teamSelect.innerHTML = '<option value="0">Semua 20 Klub PL</option>';
-        (appData.teams || []).forEach(t => {
-          const opt = document.createElement('option');
-          opt.value = t.id;
-          opt.innerText = t.name;
-          teamSelect.appendChild(opt);
-        });
+        if (teamSelect) {
+          teamSelect.innerHTML = '<option value="0">Semua 20 Klub PL</option>';
+          (appData.teams || []).forEach(t => {
+            const opt = document.createElement('option');
+            opt.value = t.id;
+            opt.innerText = t.name;
+            teamSelect.appendChild(opt);
+          });
+        }
 
         // Fill Profile & Header
-        document.getElementById('header-team-name').innerText = appData.entry.name;
-        document.getElementById('header-manager-name').innerText = `${appData.entry.player_first_name} ${appData.entry.player_last_name}`;
-        document.getElementById('badge-gameweek').innerText = `GW${appData.current_event} LIVE`;
+        if (appData.entry) {
+          const teamNameEl = document.getElementById('header-team-name');
+          if (teamNameEl) teamNameEl.innerText = appData.entry.name;
+          const mgrNameEl = document.getElementById('header-manager-name');
+          if (mgrNameEl) mgrNameEl.innerText = `${appData.entry.player_first_name} ${appData.entry.player_last_name}`;
+          const teamIdEl = document.getElementById('header-team-id');
+          if (teamIdEl) teamIdEl.innerText = teamId;
+          const navAccountLabel = document.getElementById('nav-btn-account-label');
+          if (navAccountLabel) navAccountLabel.innerText = appData.entry.player_first_name || 'Akun FPL';
+        }
+
+        const gwBadge = document.getElementById('badge-gameweek');
+        if (gwBadge) gwBadge.innerText = `GW${appData.current_event} LIVE`;
 
         // Fill Stat Cards
-        document.getElementById('stat-total-points').innerText = (appData.entry.summary_overall_points || 0).toLocaleString();
-        document.getElementById('stat-overall-rank').innerText = `#${(appData.entry.summary_overall_rank || 0).toLocaleString()}`;
+        const totalPtsEl = document.getElementById('stat-total-points');
+        if (totalPtsEl) totalPtsEl.innerText = (appData.entry?.summary_overall_points || 0).toLocaleString();
+        const rankEl = document.getElementById('stat-overall-rank');
+        if (rankEl) rankEl.innerText = `#${(appData.entry?.summary_overall_rank || 0).toLocaleString()}`;
         
         const lastGw = (appData.history && appData.history.current && appData.history.current.length > 0) ? appData.history.current[appData.history.current.length - 1] : null;
         if (lastGw) {
-          document.getElementById('stat-gw-points').innerText = `${lastGw.points} Pts`;
-          document.getElementById('stat-gw-rank').innerText = `Rank: ${(lastGw.rank / 1000000).toFixed(1)}M`;
-          document.getElementById('stat-rank-percentile').innerText = `Top ${lastGw.overall_rank_percentage || '24'}% Global`;
-          document.getElementById('stat-bank-balance').innerText = `£${(lastGw.bank / 10).toFixed(1)}m`;
-          document.getElementById('stat-squad-value').innerText = `£${(lastGw.value / 10).toFixed(1)}m`;
+          const gwPtsEl = document.getElementById('stat-gw-points');
+          if (gwPtsEl) gwPtsEl.innerText = `${lastGw.points} Pts`;
+          const gwRankEl = document.getElementById('stat-gw-rank');
+          if (gwRankEl) gwRankEl.innerText = `Rank: ${(lastGw.rank / 1000000).toFixed(1)}M`;
+          const rankPctEl = document.getElementById('stat-rank-percentile');
+          if (rankPctEl) rankPctEl.innerText = `Top ${lastGw.overall_rank_percentage || '24'}% Global`;
+          const bankEl = document.getElementById('stat-bank-balance');
+          if (bankEl) bankEl.innerText = `£${(lastGw.bank / 10).toFixed(1)}m`;
+          const valEl = document.getElementById('stat-squad-value');
+          if (valEl) valEl.innerText = `£${(lastGw.value / 10).toFixed(1)}m`;
         }
+
+        // Reset simulation on team switch
+        selectedPlayer = null;
+        simulationTarget = null;
+        const banner = document.getElementById('sim-status-banner');
+        if (banner) banner.classList.add('hidden');
 
         renderPitch();
         renderInsights();
         fetchTargets();
 
-        // Feature 2: Start Countdown Timer
+        // Start Countdown Timer
         if (appData.next_event) {
           startDeadlineCountdown(appData.next_event.deadline_time, appData.next_event.name);
         }
 
-        // Feature 1: Render Market Trends
+        // Render Market Trends
         if (appData.market_trends) {
           renderMarketTrends(appData.market_trends);
         }
 
+        return true;
       } catch (err) {
         console.error('Failed to load user team data:', err);
+        if (statusBox) {
+          statusBox.className = 'p-2.5 rounded-xl text-xs font-semibold bg-rose-500/20 text-rose-300 border border-rose-500/40';
+          statusBox.innerHTML = `❌ Error: ${err.message}`;
+          statusBox.classList.remove('hidden');
+        }
+        return false;
       }
     }
 
     // Start App
     setTheme(currentTheme);
-    loadData();
+    const initialSavedTeam = localStorage.getItem(STORAGE_KEY_TEAM);
+    if (!initialSavedTeam) {
+      // First time visitor: load default demo team, then gently open login modal to prompt connecting their team
+      loadData(DEFAULT_DEMO_ID).then(() => {
+        openLoginModal(false);
+      });
+    } else {
+      loadData(initialSavedTeam);
+    }
   </script>
 </body>
 </html>

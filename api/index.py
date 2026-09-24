@@ -1,5 +1,6 @@
 from http.server import BaseHTTPRequestHandler
 import urllib.request
+import urllib.error
 import json
 import time
 import os
@@ -292,8 +293,17 @@ class handler(BaseHTTPRequestHandler):
                 self.send_header("Access-Control-Allow-Origin", "*")
                 self.end_headers()
                 self.wfile.write(json.dumps(payload).encode())
+            except urllib.error.HTTPError as he:
+                self.send_response(he.code)
+                self.send_header("Content-Type", "application/json; charset=utf-8")
+                self.send_header("Access-Control-Allow-Origin", "*")
+                self.end_headers()
+                err_msg = f"Tim FPL dengan ID '{team_id}' tidak ditemukan di Fantasy Premier League (HTTP 404)." if he.code == 404 else f"Gagal menghubungi server Fantasy Premier League (HTTP {he.code})."
+                self.wfile.write(json.dumps({"error": err_msg, "code": he.code}).encode())
             except Exception as e:
                 self.send_response(500)
+                self.send_header("Content-Type", "application/json; charset=utf-8")
+                self.send_header("Access-Control-Allow-Origin", "*")
                 self.end_headers()
                 self.wfile.write(json.dumps({"error": str(e)}).encode())
 

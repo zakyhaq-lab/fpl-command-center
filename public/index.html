@@ -587,12 +587,12 @@
             <div class="absolute bottom-0 left-1/2 -translate-x-1/2 w-28 sm:w-32 h-10 border-t-2 border-l-2 border-r-2 pitch-line pointer-events-none"></div>
 
             <!-- FWD Row (Top) -->
-            <div class="flex justify-center items-center gap-2 sm:gap-4 z-10 pt-2" id="pitch-fwd">
+            <div class="flex justify-center items-center gap-1.5 sm:gap-4 z-10 pt-2" id="pitch-fwd">
               <!-- Dynamically Populated -->
             </div>
 
             <!-- MID Row -->
-            <div class="flex justify-center items-center gap-2 sm:gap-3 flex-wrap z-10 my-auto py-2" id="pitch-mid">
+            <div class="flex justify-center items-center gap-1 sm:gap-2.5 flex-wrap z-10 my-auto py-2" id="pitch-mid">
               <div class="text-center py-10 px-4 glass-panel rounded-2xl border border-white/10 max-w-sm mx-auto my-auto z-10">
                 <div class="text-3xl mb-2">🏟️</div>
                 <h3 class="text-white font-black text-sm mb-1">Belum Ada Tim Terhubung</h3>
@@ -604,12 +604,12 @@
             </div>
 
             <!-- DEF Row -->
-            <div class="flex justify-center items-center gap-2 sm:gap-4 flex-wrap z-10 my-auto py-2" id="pitch-def">
+            <div class="flex justify-center items-center gap-1 sm:gap-3 flex-wrap z-10 my-auto py-2" id="pitch-def">
               <!-- Dynamically Populated -->
             </div>
 
             <!-- GK Row (Bottom) -->
-            <div class="flex justify-center items-center z-10 pb-2" id="pitch-gk">
+            <div class="flex justify-center items-center gap-1.5 sm:gap-4 z-10 pb-2" id="pitch-gk">
               <!-- Dynamically Populated -->
             </div>
 
@@ -1376,9 +1376,8 @@
       // Visual Content depending on display mode
       let visualContent = '';
       if (playerDisplayMode === 'kit') {
-        // 100% Guaranteed Official Club Jersey of current club
         visualContent = `
-          <div class="relative w-12 h-12 sm:w-14 sm:h-14 mx-auto my-0.5 flex items-center justify-center">
+          <div class="relative w-10 h-10 min-[390px]:w-12 min-[390px]:h-12 sm:w-14 sm:h-14 mx-auto my-0.5 flex items-center justify-center">
             <img src="${getClubKitUrl(p.team_code, p.element_type)}" 
                  class="w-full h-full object-contain filter drop-shadow group-hover:scale-105 transition" 
                  alt="${p.web_name}" />
@@ -1386,9 +1385,8 @@
           </div>
         `;
       } else if (playerDisplayMode === 'photo') {
-        // Full HD Official Headshot Photo
         visualContent = `
-          <div class="relative w-12 h-12 sm:w-14 sm:h-14 mx-auto my-0.5">
+          <div class="relative w-10 h-10 min-[390px]:w-12 min-[390px]:h-12 sm:w-14 sm:h-14 mx-auto my-0.5">
             <img src="${getPlayerPhotoUrl(p.code)}" 
                  onerror="this.onerror=null; this.src='${getClubKitUrl(p.team_code, p.element_type)}'" 
                  class="w-full h-full object-contain filter drop-shadow group-hover:scale-105 transition" 
@@ -1397,17 +1395,16 @@
           </div>
         `;
       } else {
-        // Hybrid Mode: HD Headshot + Official Club Crest Badge Overlay
         visualContent = `
-          <div class="relative w-12 h-12 sm:w-14 sm:h-14 mx-auto my-0.5">
+          <div class="relative w-10 h-10 min-[390px]:w-12 min-[390px]:h-12 sm:w-14 sm:h-14 mx-auto my-0.5">
             <img src="${getPlayerPhotoUrl(p.code)}" 
                  onerror="this.onerror=null; this.src='${getClubKitUrl(p.team_code, p.element_type)}'" 
                  class="w-full h-full object-contain filter drop-shadow group-hover:scale-105 transition" 
                  alt="${p.web_name}" />
-            <!-- Official Club Badge Crest (Guaranteed Current Club) -->
+            <!-- Official Club Badge Crest -->
             <img src="${getClubBadgeUrl(p.team_code)}" 
                  title="Klub Saat Ini: ${p.team_short}" 
-                 class="absolute -bottom-1 -right-1 w-5 h-5 object-contain filter drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)] bg-[#070417]/90 rounded-full p-[1px] border border-white/20" />
+                 class="absolute -bottom-1 -right-1 w-4 h-4 min-[390px]:w-5 min-[390px]:h-5 object-contain filter drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)] bg-[#070417]/90 rounded-full p-[1px] border border-white/20" />
             ${isSimulated ? '<span class="absolute -top-1 -right-1 bg-pink-500 text-[8px] font-bold text-white px-1 rounded shadow">SIM</span>' : ''}
           </div>
         `;
@@ -1415,13 +1412,13 @@
 
       return `
         <div onclick="selectTransferOut(${p.element_id})" 
-             class="player-card ${isSelected ? 'is-selected' : ''} ${isSimulated ? 'ring-2 ring-pink-500' : ''} cursor-pointer rounded-xl p-2 text-center w-[92px] sm:w-[104px] shadow-xl relative group select-none">
+             class="player-card ${isSelected ? 'is-selected' : ''} ${isSimulated ? 'ring-2 ring-pink-500' : ''} cursor-pointer rounded-xl p-1.5 sm:p-2 text-center w-[74px] min-[390px]:w-[82px] sm:w-[94px] md:w-[104px] shadow-xl relative group select-none">
           
           <!-- Club & Captain Header -->
-          <div class="flex items-center justify-between gap-1 mb-1">
+          <div class="flex items-center justify-between gap-0.5 min-[390px]:gap-1 mb-1">
             <div class="flex items-center gap-1 min-w-0">
-              <img src="${getClubBadgeUrl(p.team_code)}" class="w-3.5 h-3.5 object-contain flex-shrink-0" />
-              <span class="text-[8px] font-black px-1 py-0.2 rounded uppercase truncate" style="background:${teamBg}; color:#fff;">
+              <img src="${getClubBadgeUrl(p.team_code)}" class="w-3 h-3 min-[390px]:w-3.5 min-[390px]:h-3.5 object-contain flex-shrink-0" />
+              <span class="text-[7.5px] min-[390px]:text-[8px] font-black px-1 py-0.2 rounded uppercase truncate" style="background:${teamBg}; color:#fff;">
                 ${p.team_short}
               </span>
             </div>
@@ -1435,7 +1432,7 @@
           ${visualContent}
 
           <!-- Web Name -->
-          <div class="text-[11px] sm:text-xs font-extrabold text-white truncate mt-0.5" title="${p.web_name}">
+          <div class="text-[10px] min-[390px]:text-[11px] sm:text-xs font-extrabold text-white truncate mt-0.5" title="${p.web_name}">
             ${p.web_name}
           </div>
 
@@ -1445,7 +1442,7 @@
           </div>
 
           <!-- Pts & Cost -->
-          <div class="flex items-center justify-between pt-1 border-t border-white/10 text-[10px] font-mono">
+          <div class="flex items-center justify-between pt-1 border-t border-white/10 text-[9px] min-[390px]:text-[10px] font-mono">
             <span class="font-extrabold text-pl-gold">${p.event_points} Pts</span>
             <span class="text-slate-400">£${(p.now_cost / 10).toFixed(1)}m</span>
           </div>

@@ -48,11 +48,25 @@ A high-tech, live broadcast dashboard and tactical transfer planner for Fantasy 
   - **Copy Image:** One-click copy directly to system clipboard for instant pasting into WhatsApp Web, Telegram, Discord, or Twitter.
   - **Copy Text:** Generates structured matchday lineup summary with emojis ready for group chat sharing.
 
-## 🚀 How to Run
+## 🚀 How to Run Locally
 
 ```bash
 python3 server.py
 ```
 
 Open `http://localhost:8080` in your web browser.
+
+## 🌐 Deploy to Vercel
+
+This project is pre-configured for **zero-config instant deployment** on [Vercel](https://vercel.com/):
+
+- **Static Frontend (`index.html`):** Deployed directly on Vercel's global Edge CDN (<50ms delivery).
+- **Backend API (`api/index.py`):** Runs as a Python Serverless Function powered by standard library (zero pip build overhead).
+- **Routing Configuration (`vercel.json`):** Rewrites `/api/*` to the Python serverless function automatically.
+
+### Deploy Steps:
+1. Push this repository to your GitHub account (or import `zakyhaq-lab/fpl-command-center`).
+2. Go to **[vercel.com/new](https://vercel.com/new)** and click **Import** next to `fpl-command-center`.
+3. Keep default settings (Framework Preset: **Other**) and click **Deploy**.
+4. Your live app will be published on `https://fpl-command-center.vercel.app` (or your custom domain) with full live API syncing!
 

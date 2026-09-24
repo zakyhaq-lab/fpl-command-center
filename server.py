@@ -3,299 +3,1563 @@ import socketserver
 import urllib.request
 import json
 import sys
+import time
 from urllib.parse import urlparse, parse_qs
 
 PORT = 8080
 BASE_URL = "https://fantasy.premierleague.com/api"
 HEADERS = {"User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)"}
 
-def fetch_json(url):
+# In-memory cache with TTL (in seconds)
+CACHE = {}
+
+def fetch_json(url, ttl=300):
+    now = time.time()
+    if url in CACHE:
+        data, ts = CACHE[url]
+        if now - ts < ttl:
+            return data
     req = urllib.request.Request(url, headers=HEADERS)
     with urllib.request.urlopen(req, timeout=12) as response:
-        return json.loads(response.read().decode())
+        data = json.loads(response.read().decode())
+        CACHE[url] = (data, now)
+        return data
+
+# Club color mapping
+CLUB_DATA = {
+    'ARS': {'name': 'Arsenal', 'primary': '#EF0107', 'text': '#FFFFFF', 'accent': '#023474'},
+    'AVL': {'name': 'Aston Villa', 'primary': '#95BFE5', 'text': '#111827', 'accent': '#670E36'},
+    'BOU': {'name': 'Bournemouth', 'primary': '#DA291C', 'text': '#FFFFFF', 'accent': '#000000'},
+    'BRE': {'name': 'Brentford', 'primary': '#E30613', 'text': '#FFFFFF', 'accent': '#FBB800'},
+    'BHA': {'name': 'Brighton', 'primary': '#0057B8', 'text': '#FFFFFF', 'accent': '#FFCD00'},
+    'CHE': {'name': 'Chelsea', 'primary': '#034694', 'text': '#FFFFFF', 'accent': '#DBA111'},
+    'COV': {'name': 'Coventry', 'primary': '#00A3E0', 'text': '#FFFFFF', 'accent': '#000000'},
+    'CRY': {'name': 'Crystal Palace', 'primary': '#1B458F', 'text': '#FFFFFF', 'accent': '#C4122E'},
+    'EVE': {'name': 'Everton', 'primary': '#003399', 'text': '#FFFFFF', 'accent': '#FFFFFF'},
+    'FUL': {'name': 'Fulham', 'primary': '#CC0000', 'text': '#FFFFFF', 'accent': '#000000'},
+    'HUL': {'name': 'Hull City', 'primary': '#F5A800', 'text': '#111827', 'accent': '#000000'},
+    'IPS': {'name': 'Ipswich', 'primary': '#0053A0', 'text': '#FFFFFF', 'accent': '#DA291C'},
+    'LEE': {'name': 'Leeds', 'primary': '#FFCD00', 'text': '#111827', 'accent': '#1D428A'},
+    'LIV': {'name': 'Liverpool', 'primary': '#C8102E', 'text': '#FFFFFF', 'accent': '#00B2A9'},
+    'MCI': {'name': 'Man City', 'primary': '#6CABDD', 'text': '#111827', 'accent': '#1C2C5B'},
+    'MUN': {'name': 'Man Utd', 'primary': '#DA291C', 'text': '#FFFFFF', 'accent': '#FBE122'},
+    'NEW': {'name': 'Newcastle', 'primary': '#241F20', 'text': '#FFFFFF', 'accent': '#41B6E6'},
+    'NFO': {'name': "Nott'm Forest", 'primary': '#DD0000', 'text': '#FFFFFF', 'accent': '#FFFFFF'},
+    'TOT': {'name': 'Spurs', 'primary': '#132257', 'text': '#FFFFFF', 'accent': '#FFFFFF'},
+    'SUN': {'name': 'Sunderland', 'primary': '#EB172B', 'text': '#FFFFFF', 'accent': '#000000'}
+}
 
 HTML_PAGE = """<!DOCTYPE html>
-<html lang="en">
+<html lang="id">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>FPL Tactical Hub - Maulana Zaky's Team</title>
+  <title>FPL Command Center | Tactical Hub & Transfer Lab</title>
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700;800&family=Outfit:wght@300;400;500;600;700;800;900&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <!-- Tailwind CSS CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
+  <!-- html2canvas for High Definition Card Export -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            pl: {
+              purple: '#38003c',
+              dark: '#070417',
+              surface: '#0f0926',
+              surfaceHover: '#1a103c',
+              border: 'rgba(255, 255, 255, 0.08)',
+              borderHover: 'rgba(0, 255, 135, 0.4)',
+              green: '#00ff87',
+              cyan: '#04f5ff',
+              pink: '#e90052',
+              gold: '#ffd000',
+              card: 'rgba(15, 9, 38, 0.85)'
+            }
+          },
+          fontFamily: {
+            sans: ['Outfit', 'Plus Jakarta Sans', 'system-ui', 'sans-serif'],
+            mono: ['JetBrains Mono', 'monospace'],
+          }
+        }
+      }
+    }
+  </script>
   <style>
+    :root {
+      /* Default Theme: Titanium Slate (Minimalist) */
+      --th-bg: #0b0f19;
+      --th-surface: rgba(15, 23, 42, 0.85);
+      --th-surface-solid: #0f172a;
+      --th-surface-hover: rgba(30, 41, 59, 0.9);
+      --th-header: rgba(15, 23, 42, 0.94);
+      --th-primary: #38bdf8;
+      --th-primary-hover: #0284c7;
+      --th-primary-rgb: 56, 189, 248;
+      --th-accent: #10b981;
+      --th-accent-rgb: 16, 185, 129;
+      --th-gold: #ffd000;
+      --th-border: rgba(255, 255, 255, 0.09);
+      --th-border-glow: rgba(56, 189, 248, 0.35);
+      --th-glow-1: rgba(56, 189, 248, 0.14);
+      --th-glow-2: rgba(16, 185, 129, 0.08);
+      --th-card-bg: linear-gradient(135deg, rgba(15, 23, 42, 0.95), rgba(11, 15, 25, 0.98));
+    }
+
+    [data-theme="pl"] {
+      --th-bg: #070417;
+      --th-surface: rgba(15, 9, 38, 0.82);
+      --th-surface-solid: #0f0926;
+      --th-surface-hover: rgba(26, 16, 60, 0.9);
+      --th-header: rgba(12, 7, 32, 0.94);
+      --th-primary: #00ff87;
+      --th-primary-hover: #00cc6a;
+      --th-primary-rgb: 0, 255, 135;
+      --th-accent: #38003c;
+      --th-accent-rgb: 56, 0, 60;
+      --th-gold: #ffd000;
+      --th-border: rgba(255, 255, 255, 0.08);
+      --th-border-glow: rgba(0, 255, 135, 0.35);
+      --th-glow-1: rgba(56, 0, 60, 0.45);
+      --th-glow-2: rgba(0, 255, 135, 0.1);
+      --th-card-bg: linear-gradient(135deg, rgba(20, 14, 46, 0.95), rgba(12, 7, 30, 0.98));
+    }
+
+    [data-theme="emerald"] {
+      --th-bg: #060b0e;
+      --th-surface: rgba(10, 22, 26, 0.85);
+      --th-surface-solid: #0b1c20;
+      --th-surface-hover: rgba(15, 34, 40, 0.9);
+      --th-header: rgba(8, 18, 22, 0.94);
+      --th-primary: #10b981;
+      --th-primary-hover: #059669;
+      --th-primary-rgb: 16, 185, 129;
+      --th-accent: #047857;
+      --th-accent-rgb: 4, 120, 87;
+      --th-gold: #fbbf24;
+      --th-border: rgba(255, 255, 255, 0.08);
+      --th-border-glow: rgba(16, 185, 129, 0.4);
+      --th-glow-1: rgba(16, 185, 129, 0.22);
+      --th-glow-2: rgba(6, 95, 70, 0.2);
+      --th-card-bg: linear-gradient(135deg, rgba(10, 24, 28, 0.95), rgba(6, 15, 18, 0.98));
+    }
+
+    [data-theme="cyber"] {
+      --th-bg: #050814;
+      --th-surface: rgba(10, 18, 40, 0.85);
+      --th-surface-solid: #0d1b38;
+      --th-surface-hover: rgba(18, 30, 65, 0.9);
+      --th-header: rgba(8, 14, 32, 0.94);
+      --th-primary: #00f0ff;
+      --th-primary-hover: #00c2cf;
+      --th-primary-rgb: 0, 240, 255;
+      --th-accent: #ff007f;
+      --th-accent-rgb: 255, 0, 127;
+      --th-gold: #ffd000;
+      --th-border: rgba(0, 240, 255, 0.18);
+      --th-border-glow: rgba(0, 240, 255, 0.45);
+      --th-glow-1: rgba(0, 240, 255, 0.18);
+      --th-glow-2: rgba(255, 0, 127, 0.15);
+      --th-card-bg: linear-gradient(135deg, rgba(12, 22, 50, 0.95), rgba(7, 12, 30, 0.98));
+    }
+
+    [data-theme="royal"] {
+      --th-bg: #050c1f;
+      --th-surface: rgba(11, 24, 52, 0.85);
+      --th-surface-solid: #0e2045;
+      --th-surface-hover: rgba(18, 38, 80, 0.9);
+      --th-header: rgba(8, 18, 42, 0.94);
+      --th-primary: #38bdf8;
+      --th-primary-hover: #0284c7;
+      --th-primary-rgb: 56, 189, 248;
+      --th-accent: #2563eb;
+      --th-accent-rgb: 37, 99, 235;
+      --th-gold: #ffc72c;
+      --th-border: rgba(255, 255, 255, 0.09);
+      --th-border-glow: rgba(56, 189, 248, 0.4);
+      --th-glow-1: rgba(37, 99, 235, 0.28);
+      --th-glow-2: rgba(255, 199, 44, 0.12);
+      --th-card-bg: linear-gradient(135deg, rgba(14, 28, 62, 0.95), rgba(8, 16, 38, 0.98));
+    }
+
+    [data-theme="crimson"] {
+      --th-bg: #0e0709;
+      --th-surface: rgba(26, 12, 16, 0.85);
+      --th-surface-solid: #220e14;
+      --th-surface-hover: rgba(42, 18, 25, 0.9);
+      --th-header: rgba(20, 8, 12, 0.94);
+      --th-primary: #ff4d6d;
+      --th-primary-hover: #e02447;
+      --th-primary-rgb: 255, 77, 109;
+      --th-accent: #ef0107;
+      --th-accent-rgb: 239, 1, 7;
+      --th-gold: #ffd000;
+      --th-border: rgba(255, 255, 255, 0.08);
+      --th-border-glow: rgba(255, 77, 109, 0.4);
+      --th-glow-1: rgba(239, 1, 7, 0.25);
+      --th-glow-2: rgba(255, 77, 109, 0.12);
+      --th-card-bg: linear-gradient(135deg, rgba(30, 14, 18, 0.95), rgba(16, 6, 9, 0.98));
+    }
+
     body {
-      background-color: #080c14;
-      color: #f3f4f6;
-      font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-    }
-    /* Stadium Grass Pitch Pattern */
-    .stadium-pitch {
-      background: #064e3b;
+      background-color: var(--th-bg);
+      color: #f1f5f9;
+      font-family: 'Outfit', -apple-system, BlinkMacSystemFont, sans-serif;
+      overflow-x: hidden;
       background-image: 
-        repeating-linear-gradient(0deg, rgba(6, 78, 59, 0.95), rgba(6, 78, 59, 0.95) 45px, rgba(4, 120, 87, 0.85) 45px, rgba(4, 120, 87, 0.85) 90px),
-        radial-gradient(ellipse at 50% 30%, rgba(52, 211, 153, 0.15) 0%, transparent 70%);
-      box-shadow: inset 0 0 80px rgba(0,0,0,0.6);
+        radial-gradient(circle at 10% 20%, var(--th-glow-1) 0%, transparent 45%),
+        radial-gradient(circle at 90% 10%, var(--th-glow-2) 0%, transparent 40%),
+        radial-gradient(circle at 50% 90%, var(--th-glow-1) 0%, transparent 50%);
+      background-attachment: fixed;
+      transition: background-color 0.25s ease;
+    }
+    
+    /* Scrollbar styling */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: var(--th-bg);
+    }
+    ::-webkit-scrollbar-thumb {
+      background: rgba(255, 255, 255, 0.15);
+      border-radius: 9999px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: var(--th-primary);
+    }
+
+    /* Glassmorphism Classes */
+    .glass-panel {
+      background: var(--th-surface);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid var(--th-border);
+      box-shadow: 0 10px 30px -5px rgba(0, 0, 0, 0.6);
+      transition: background-color 0.25s ease, border-color 0.25s ease;
+    }
+
+    .glass-header {
+      background: var(--th-header);
+      backdrop-filter: blur(20px);
+      border: 1px solid var(--th-border);
+      transition: background-color 0.25s ease, border-color 0.25s ease;
+    }
+
+    /* Realistic 3D Stadium Grass Pitch */
+    .pitch-container {
+      background: #08432a;
+      background-image: 
+        repeating-linear-gradient(
+          0deg, 
+          rgba(6, 60, 38, 0.98), 
+          rgba(6, 60, 38, 0.98) 46px, 
+          rgba(10, 80, 50, 0.94) 46px, 
+          rgba(10, 80, 50, 0.94) 92px
+        ),
+        radial-gradient(ellipse at 50% 15%, rgba(var(--th-primary-rgb), 0.2) 0%, transparent 65%),
+        radial-gradient(circle at 50% 90%, rgba(0, 0, 0, 0.6) 0%, transparent 80%);
       position: relative;
+      border: 2px solid rgba(var(--th-primary-rgb), 0.35);
+      box-shadow: inset 0 0 100px rgba(0, 0, 0, 0.85), 0 20px 40px -15px rgba(var(--th-primary-rgb), 0.15);
     }
+
     .pitch-line {
-      border: 1px solid rgba(255, 255, 255, 0.22);
+      border-color: rgba(255, 255, 255, 0.35);
     }
+
     /* Player Card Glass */
     .player-card {
-      background: rgba(15, 23, 42, 0.88);
-      backdrop-filter: blur(8px);
-      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+      background: var(--th-card-bg);
+      backdrop-filter: blur(10px);
+      border: 1px solid var(--th-border);
+      transition: all 0.22s cubic-bezier(0.16, 1, 0.3, 1);
     }
     .player-card:hover {
-      transform: translateY(-3px) scale(1.03);
-      box-shadow: 0 10px 25px -5px rgba(16, 185, 129, 0.3);
+      transform: translateY(-4px) scale(1.02);
+      border-color: var(--th-primary);
+      box-shadow: 0 12px 25px -4px var(--th-border-glow), 0 0 15px rgba(var(--th-primary-rgb), 0.2);
+    }
+    .player-card.is-selected {
+      border: 2px solid var(--th-primary) !important;
+      background: linear-gradient(135deg, rgba(var(--th-primary-rgb), 0.15), var(--th-surface-solid)) !important;
+      box-shadow: 0 0 25px var(--th-border-glow), inset 0 0 15px rgba(var(--th-primary-rgb), 0.2) !important;
+      transform: translateY(-6px) scale(1.04);
+    }
+
+    /* Dynamic Theme Class Overrides */
+    .text-pl-green { color: var(--th-primary) !important; }
+    .bg-pl-green { background-color: var(--th-primary) !important; color: #070417 !important; }
+    .border-pl-green { border-color: var(--th-primary) !important; }
+    .border-pl-green\/30 { border-color: rgba(var(--th-primary-rgb), 0.3) !important; }
+    .border-pl-green\/40 { border-color: rgba(var(--th-primary-rgb), 0.4) !important; }
+    .bg-pl-green\/10 { background-color: rgba(var(--th-primary-rgb), 0.1) !important; }
+    .bg-pl-green\/15 { background-color: rgba(var(--th-primary-rgb), 0.15) !important; }
+    .bg-pl-green\/20 { background-color: rgba(var(--th-primary-rgb), 0.2) !important; }
+    .accent-pl-green { accent-color: var(--th-primary) !important; }
+
+    /* FDR badges */
+    .fdr-1, .fdr-2 { background-color: rgba(0, 255, 135, 0.18); color: #00ff87; border: 1px solid rgba(0, 255, 135, 0.45); }
+    .fdr-3 { background-color: rgba(148, 163, 184, 0.18); color: #cbd5e1; border: 1px solid rgba(148, 163, 184, 0.35); }
+    .fdr-4 { background-color: rgba(244, 63, 94, 0.2); color: #fb7185; border: 1px solid rgba(244, 63, 94, 0.45); }
+    .fdr-5 { background-color: rgba(136, 19, 55, 0.35); color: #fda4af; border: 1px solid rgba(225, 29, 72, 0.6); }
+
+    /* Pulsing animations */
+    @keyframes pulse-glow {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.65; transform: scale(0.96); }
+    }
+    .live-dot {
+      animation: pulse-glow 2s infinite ease-in-out;
+    }
+
+    /* Modal Animation */
+    .modal-backdrop {
+      animation: fadeIn 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: scale(0.97); }
+      to { opacity: 1; transform: scale(1); }
     }
   </style>
 </head>
-<body class="p-4 md:p-6 min-h-screen">
-  <div class="max-w-7xl mx-auto space-y-6">
-    
-    <!-- Topbar Header -->
-    <header class="flex flex-wrap items-center justify-between gap-4 bg-gray-900/80 border border-gray-800 rounded-2xl p-4 shadow-xl backdrop-blur">
-      <div class="flex items-center gap-3">
-        <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-400 to-teal-600 flex items-center justify-center font-black text-black text-lg shadow-lg">
-          PL
-        </div>
-        <div>
-          <div class="flex items-center gap-2">
-            <span class="px-2 py-0.5 text-[10px] font-extrabold bg-emerald-500/20 text-emerald-400 rounded-md border border-emerald-500/30 uppercase tracking-wider" id="gw-badge">GW5 LIVE</span>
-            <h1 class="text-xl font-black tracking-tight" id="team-name">Maulana Zaky's Team</h1>
-          </div>
-          <p class="text-xs text-gray-400 mt-0.5">Manager: <span class="text-gray-200 font-semibold" id="manager-name">Maulana Zaky Haq</span> • ID: <span class="font-mono text-emerald-400">2805703</span></p>
-        </div>
-      </div>
+<body class="min-h-screen p-3 sm:p-5 md:p-6 lg:p-8">
 
-      <!-- Live Stat Cards -->
-      <div class="flex flex-wrap items-center gap-2.5 text-xs">
-        <div class="bg-gray-950/70 border border-gray-800 rounded-xl px-4 py-2 text-center min-w-[95px]">
-          <div class="text-[10px] uppercase font-bold text-gray-400 tracking-wider">Total Pts</div>
-          <div class="text-lg font-black text-emerald-400 font-mono mt-0.5" id="stat-points">321</div>
-        </div>
-        <div class="bg-gray-950/70 border border-gray-800 rounded-xl px-4 py-2 text-center min-w-[105px]">
-          <div class="text-[10px] uppercase font-bold text-gray-400 tracking-wider">Overall Rank</div>
-          <div class="text-lg font-black text-gray-100 font-mono mt-0.5" id="stat-rank">#2,622,015</div>
-        </div>
-        <div class="bg-gray-950/70 border border-gray-800 rounded-xl px-4 py-2 text-center min-w-[95px]">
-          <div class="text-[10px] uppercase font-bold text-gray-400 tracking-wider">Bank Saldo</div>
-          <div class="text-lg font-black text-yellow-400 font-mono mt-0.5" id="stat-bank">£0.0m</div>
-        </div>
+  <!-- TOP BROADCAST HEADER -->
+  <header class="max-w-[1520px] mx-auto mb-6 relative z-30">
+    <div class="glass-header rounded-2xl p-4 sm:p-5 shadow-2xl relative">
+      <!-- Glow ambient accent wrapper (keeps glows clipped without clipping dropdowns) -->
+      <div class="absolute inset-0 rounded-2xl overflow-hidden pointer-events-none">
+        <div class="absolute -top-24 -left-24 w-60 h-60 bg-pl-purple rounded-full blur-3xl opacity-60"></div>
+        <div class="absolute -top-24 -right-24 w-60 h-60 bg-emerald-500 rounded-full blur-3xl opacity-20"></div>
       </div>
-    </header>
-
-    <!-- Main Grid -->
-    <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
       
-      <!-- Left: Stadium Pitch View (7 cols) -->
-      <section class="lg:col-span-7 space-y-4">
-        <div class="bg-gray-900/60 border border-gray-800 rounded-2xl p-4 shadow-xl">
-          <div class="flex justify-between items-center mb-3">
-            <div>
-              <h2 class="text-xs font-black uppercase tracking-wider text-emerald-400">Starting XI (Formasi 3-5-2)</h2>
-              <p class="text-[11px] text-gray-400">Klik pemain untuk simulasi Transfer Out</p>
+      <div class="relative z-10 flex flex-col xl:flex-row xl:items-center justify-between gap-5">
+        
+        <!-- Brand & Manager Profile -->
+        <div class="flex items-center gap-3.5 sm:gap-4">
+          <!-- Official Premier League Crest Icon -->
+          <div class="w-12 h-12 sm:w-14 sm:h-14 rounded-2xl bg-gradient-to-br from-pl-purple via-[#56005d] to-[#1c0024] p-[2px] shadow-xl flex-shrink-0 relative group">
+            <div class="w-full h-full bg-[#120728] rounded-2xl flex items-center justify-center border border-white/10 overflow-hidden">
+              <svg class="w-8 h-8 sm:w-9 sm:h-9 text-pl-green filter drop-shadow-[0_0_8px_rgba(0,255,135,0.7)]" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 3c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3zm0 14.2c-2.5 0-4.71-1.28-6-3.22.03-1.99 4-3.08 6-3.08 1.99 0 5.97 1.09 6 3.08-1.29 1.94-3.5 3.22-6 3.22z"/>
+              </svg>
             </div>
-            <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-950 border border-emerald-800 text-emerald-300">
-              Stadium View
-            </span>
+            <div class="absolute -bottom-1 -right-1 w-4 h-4 bg-pl-green rounded-full border-2 border-[#070417] live-dot"></div>
           </div>
 
-          <!-- Stadium Grass Pitch -->
-          <div class="stadium-pitch rounded-xl p-5 flex flex-col justify-between min-h-[500px] border border-emerald-700/40 overflow-hidden relative shadow-2xl">
-            <!-- Stadium Markings -->
-            <div class="absolute inset-x-0 top-1/2 -translate-y-1/2 h-0 border-t pitch-line"></div>
-            <div class="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-28 h-28 rounded-full pitch-line"></div>
-            <div class="absolute top-0 left-1/2 -translate-x-1/2 w-48 h-20 border-b border-l border-r pitch-line"></div>
-            <div class="absolute bottom-0 left-1/2 -translate-x-1/2 w-48 h-20 border-t border-l border-r pitch-line"></div>
+          <div>
+            <div class="flex flex-wrap items-center gap-2">
+              <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-extrabold tracking-wider bg-pl-green/15 text-pl-green border border-pl-green/30 uppercase" id="badge-gameweek">
+                <span class="w-1.5 h-1.5 rounded-full bg-pl-green animate-ping"></span>
+                GW5 LIVE
+              </span>
+              <!-- LIVE GAMEWEEK DEADLINE COUNTDOWN TIMER -->
+              <div id="badge-deadline" class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] sm:text-[11px] font-bold bg-amber-500/15 text-amber-300 border border-amber-500/30 transition shadow-sm">
+                <span class="w-1.5 h-1.5 rounded-full bg-amber-400 animate-ping"></span>
+                <span id="deadline-label" class="uppercase font-extrabold tracking-wider">GW6 Deadline:</span>
+                <span id="deadline-timer" class="font-mono font-black text-white">Menghitung...</span>
+              </div>
+              <span class="text-[11px] font-medium text-slate-400 bg-white/5 px-2 py-0.5 rounded-md border border-white/5">
+                Official FPL Squad
+              </span>
+            </div>
+            <h1 class="text-xl sm:text-2xl font-black tracking-tight text-white mt-1 flex items-center gap-2" id="header-team-name">
+              Maulana Zaky's Team
+            </h1>
+            <p class="text-xs text-slate-400 flex items-center gap-2 mt-0.5">
+              <span>Manager: <strong class="text-slate-200" id="header-manager-name">Maulana Zaky Haq</strong></span>
+              <span class="text-white/20">•</span>
+              <span>Team ID: <span class="font-mono text-pl-green font-semibold">2805703</span></span>
+              <span class="text-white/20">•</span>
+              <span class="text-slate-300">🇮🇩 Indonesia</span>
+            </p>
+          </div>
+        </div>
 
-            <!-- FWD Row -->
-            <div class="flex justify-center gap-4 z-10 pt-2" id="pitch-fwd"></div>
+        <!-- Broadcast Bento Stat Cards -->
+        <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2 sm:gap-2.5">
+          <!-- Total Points -->
+          <div class="glass-panel p-2.5 rounded-xl border border-white/10 text-center relative overflow-hidden group hover:border-pl-green/50 transition">
+            <span class="text-[10px] font-extrabold uppercase tracking-wider text-slate-400">Total Poin</span>
+            <div class="text-lg sm:text-xl font-black font-mono text-pl-green mt-0.5" id="stat-total-points">321</div>
+            <div class="text-[9px] text-slate-400">Kumulatif</div>
+          </div>
+
+          <!-- Overall Rank -->
+          <div class="glass-panel p-2.5 rounded-xl border border-white/10 text-center relative overflow-hidden group hover:border-white/30 transition">
+            <span class="text-[10px] font-extrabold uppercase tracking-wider text-slate-400">Overall Rank</span>
+            <div class="text-lg sm:text-xl font-black font-mono text-white mt-0.5" id="stat-overall-rank">#2,622,015</div>
+            <div class="text-[9px] text-emerald-400 font-semibold" id="stat-rank-percentile">Top 24% Global</div>
+          </div>
+
+          <!-- GW Points -->
+          <div class="glass-panel p-2.5 rounded-xl border border-white/10 text-center relative overflow-hidden group hover:border-cyan-400/50 transition">
+            <span class="text-[10px] font-extrabold uppercase tracking-wider text-slate-400">GW5 Points</span>
+            <div class="text-lg sm:text-xl font-black font-mono text-cyan-400 mt-0.5" id="stat-gw-points">47 Pts</div>
+            <div class="text-[9px] text-slate-400" id="stat-gw-rank">Rank: 5.8M</div>
+          </div>
+
+          <!-- Bank Balance -->
+          <div class="glass-panel p-2.5 rounded-xl border border-white/10 text-center relative overflow-hidden group hover:border-pl-gold/50 transition">
+            <span class="text-[10px] font-extrabold uppercase tracking-wider text-slate-400">In The Bank</span>
+            <div class="text-lg sm:text-xl font-black font-mono text-pl-gold mt-0.5" id="stat-bank-balance">£1.8m</div>
+            <div class="text-[9px] text-yellow-300/80">Saldo Transfer</div>
+          </div>
+
+          <!-- Squad Value -->
+          <div class="glass-panel p-2.5 rounded-xl border border-white/10 text-center relative overflow-hidden group hover:border-purple-400/50 transition">
+            <span class="text-[10px] font-extrabold uppercase tracking-wider text-slate-400">Squad Value</span>
+            <div class="text-lg sm:text-xl font-black font-mono text-purple-300 mt-0.5" id="stat-squad-value">£100.4m</div>
+            <div class="text-[9px] text-slate-400">Valuasi Tim</div>
+          </div>
+
+          <!-- Free Transfers -->
+          <div class="glass-panel p-2.5 rounded-xl border border-white/10 text-center relative overflow-hidden group hover:border-pink-400/50 transition">
+            <span class="text-[10px] font-extrabold uppercase tracking-wider text-slate-400">Free Transfer</span>
+            <div class="text-lg sm:text-xl font-black font-mono text-pl-pink mt-0.5" id="stat-free-transfers">1 FT</div>
+            <div class="text-[9px] text-slate-400 font-medium" id="stat-deadline-subtitle">Deadline GW6</div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Navigation Tabs & View Mode Bar -->
+      <div class="mt-5 pt-4 border-t border-white/10 flex flex-wrap items-center justify-between gap-3">
+        <div class="flex items-center gap-1.5 sm:gap-2 overflow-x-auto pb-1 sm:pb-0" id="nav-tabs">
+          <button onclick="switchTab('pitch')" id="tab-btn-pitch" class="tab-btn active px-3.5 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 bg-pl-green text-[#070417] shadow-lg shadow-pl-green/20">
+            <span>🏟️</span> Skuad Lapangan
+          </button>
+          <button onclick="switchTab('insights')" id="tab-btn-insights" class="tab-btn px-3.5 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 bg-white/5 hover:bg-white/10 text-slate-300 border border-white/5">
+            <span>📊</span> Manager Insights & Liga
+          </button>
+        </div>
+
+        <div class="flex items-center gap-2">
+          <!-- Simulation Status Badge -->
+          <div id="sim-status-banner" class="hidden items-center gap-1.5 px-3 py-1 rounded-lg bg-pink-500/20 border border-pink-500/40 text-pink-300 text-xs font-bold">
+            <span class="w-2 h-2 rounded-full bg-pink-400 animate-pulse"></span>
+            Simulasi Aktif (<span id="sim-transfers-count">0</span> Swap)
+            <button onclick="resetSimulation()" class="ml-1 text-[11px] underline text-white hover:text-pink-200">Reset</button>
+          </div>
+
+          <!-- Theme Switcher Dropdown -->
+          <div class="relative z-50" id="theme-dropdown-container">
+            <button onclick="toggleThemeMenu(event)" id="theme-menu-btn" title="Ganti Tema Warna" class="px-3 py-1.5 rounded-xl bg-white/10 hover:bg-white/15 text-xs font-semibold text-slate-200 border border-white/15 flex items-center gap-1.5 transition cursor-pointer shadow-lg">
+              <span id="theme-icon-display">❄️</span>
+              <span id="theme-name-display" class="hidden sm:inline">Titanium Slate</span>
+              <svg class="w-3 h-3 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+            </button>
+
+            <!-- Dropdown Menu -->
+            <div id="theme-dropdown-menu" class="hidden absolute right-0 top-full mt-2 w-64 rounded-2xl bg-[#0b1329] border border-white/20 p-2 shadow-2xl z-50 space-y-1">
+              <div class="px-2.5 py-1 text-[10px] font-black uppercase tracking-wider text-slate-400 border-b border-white/10 mb-1 flex items-center justify-between">
+                <span>Pilih Tema Visual</span>
+                <span class="text-[9px] text-pl-green font-mono">6 Tema</span>
+              </div>
+
+              <!-- Options -->
+              <button onclick="setTheme('slate', event)" data-theme-key="slate" class="theme-option-btn w-full p-2 rounded-xl text-left text-xs font-bold text-white hover:bg-white/10 flex items-center justify-between transition cursor-pointer">
+                <div class="flex items-center gap-2">
+                  <span class="text-base">❄️</span>
+                  <div>
+                    <div>Titanium Slate</div>
+                    <div class="text-[9px] text-slate-400 font-normal">Slate & Ice Blue (Minimalist)</div>
+                  </div>
+                </div>
+                <span class="theme-check text-pl-green text-xs font-black">✓</span>
+              </button>
+
+              <button onclick="setTheme('pl', event)" data-theme-key="pl" class="theme-option-btn w-full p-2 rounded-xl text-left text-xs font-bold text-white hover:bg-white/10 flex items-center justify-between transition cursor-pointer">
+                <div class="flex items-center gap-2">
+                  <span class="text-base">💜</span>
+                  <div>
+                    <div>Premier League</div>
+                    <div class="text-[9px] text-slate-400 font-normal">Electric Purple & Mint Cyan</div>
+                  </div>
+                </div>
+                <span class="theme-check text-pl-green text-xs font-black hidden">✓</span>
+              </button>
+
+              <button onclick="setTheme('emerald', event)" data-theme-key="emerald" class="theme-option-btn w-full p-2 rounded-xl text-left text-xs font-bold text-white hover:bg-white/10 flex items-center justify-between transition cursor-pointer">
+                <div class="flex items-center gap-2">
+                  <span class="text-base">🌲</span>
+                  <div>
+                    <div>Midnight Emerald</div>
+                    <div class="text-[9px] text-slate-400 font-normal">Pitch Black & Emerald Tactical</div>
+                  </div>
+                </div>
+                <span class="theme-check text-pl-green text-xs font-black hidden">✓</span>
+              </button>
+
+              <button onclick="setTheme('cyber', event)" data-theme-key="cyber" class="theme-option-btn w-full p-2 rounded-xl text-left text-xs font-bold text-white hover:bg-white/10 flex items-center justify-between transition cursor-pointer">
+                <div class="flex items-center gap-2">
+                  <span class="text-base">⚡</span>
+                  <div>
+                    <div>Cyber Neon</div>
+                    <div class="text-[9px] text-slate-400 font-normal">Dark Navy, Cyan & Neon Pink</div>
+                  </div>
+                </div>
+                <span class="theme-check text-pl-green text-xs font-black hidden">✓</span>
+              </button>
+
+              <button onclick="setTheme('royal', event)" data-theme-key="royal" class="theme-option-btn w-full p-2 rounded-xl text-left text-xs font-bold text-white hover:bg-white/10 flex items-center justify-between transition cursor-pointer">
+                <div class="flex items-center gap-2">
+                  <span class="text-base">👑</span>
+                  <div>
+                    <div>Royal Blue & Gold</div>
+                    <div class="text-[9px] text-slate-400 font-normal">Deep Sapphire & Metallic Gold</div>
+                  </div>
+                </div>
+                <span class="theme-check text-pl-green text-xs font-black hidden">✓</span>
+              </button>
+
+              <button onclick="setTheme('crimson', event)" data-theme-key="crimson" class="theme-option-btn w-full p-2 rounded-xl text-left text-xs font-bold text-white hover:bg-white/10 flex items-center justify-between transition cursor-pointer">
+                <div class="flex items-center gap-2">
+                  <span class="text-base">🔴</span>
+                  <div>
+                    <div>Crimson Stadium</div>
+                    <div class="text-[9px] text-slate-400 font-normal">Deep Onyx & Vivid Red</div>
+                  </div>
+                </div>
+                <span class="theme-check text-pl-green text-xs font-black hidden">✓</span>
+              </button>
+            </div>
+          </div>
+
+          <button onclick="refreshData()" class="px-3 py-1.5 rounded-xl bg-white/5 hover:bg-white/10 text-xs font-semibold text-slate-300 border border-white/10 flex items-center gap-1.5 transition">
+            <svg id="refresh-icon" class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+            </svg>
+            Refresh
+          </button>
+        </div>
+      </div>
+
+    </div>
+  </header>
+
+  <!-- MAIN APPLICATION GRID -->
+  <main class="max-w-[1520px] mx-auto">
+
+    <!-- VIEW 1: DUAL PANE DASHBOARD (Pitch + Transfer Lab) -->
+    <div id="view-dashboard" class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+
+      <!-- LEFT: STADIUM PITCH SECTION (7 cols on Desktop) -->
+      <section class="lg:col-span-7 space-y-4">
+        <div class="glass-panel rounded-2xl p-4 sm:p-5">
+          
+          <!-- Pitch Top Subheader -->
+          <div class="flex flex-wrap items-center justify-between gap-3 mb-4">
+            <div>
+              <div class="flex items-center gap-2">
+                <span class="px-2.5 py-0.5 rounded-full text-[11px] font-black uppercase tracking-wider bg-pl-green/15 text-pl-green border border-pl-green/30" id="pitch-formation-badge">
+                  FORMASI 3-5-2
+                </span>
+                <span class="text-xs text-slate-400">Starting XI Matchday</span>
+              </div>
+              <p class="text-xs text-slate-400 mt-1">
+                💡 <strong class="text-slate-300">Klik kartu pemain</strong> untuk simulasi transfer keluar & cek target pengganti.
+              </p>
+            </div>
+
+            <!-- Display Mode Toggle & Squad Stats -->
+            <div class="flex flex-wrap items-center gap-2.5">
+              
+              <!-- Export Squad Card Button -->
+              <button onclick="openShareModal()" title="Export Kartu Skuad Digital (PNG / WhatsApp)" class="px-2.5 py-1 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-[#070417] text-xs font-black flex items-center gap-1.5 shadow-md shadow-emerald-500/20 transition cursor-pointer">
+                <span>📸</span>
+                <span class="hidden sm:inline">Export Skuad</span>
+              </button>
+
+              <!-- Display Mode Toggle -->
+              <div class="flex items-center gap-1 bg-[#070417] p-1 rounded-xl border border-white/10 text-[10px]">
+                <span class="text-slate-400 px-1 font-bold">Tampilan:</span>
+                <button onclick="setDisplayMode('hybrid')" id="disp-mode-hybrid" title="Foto Wajah + Logo Klub Terbaru" class="px-2 py-0.5 rounded-lg font-bold bg-pl-green text-[#070417] shadow transition">
+                  🌟 Hybrid
+                </button>
+                <button onclick="setDisplayMode('kit')" id="disp-mode-kit" title="Jersey 3D Resmi Klub Terbaru" class="px-2 py-0.5 rounded-lg font-bold bg-white/5 text-slate-300 hover:bg-white/10 transition">
+                  👕 Jersey Klub
+                </button>
+                <button onclick="setDisplayMode('photo')" id="disp-mode-photo" title="Foto Wajah Headshot HD" class="px-2 py-0.5 rounded-lg font-bold bg-white/5 text-slate-300 hover:bg-white/10 transition">
+                  👤 Foto HD
+                </button>
+              </div>
+
+              <div class="h-7 w-[1px] bg-white/10 hidden sm:block"></div>
+
+              <!-- Squad Stats Mini Pill -->
+              <div class="flex items-center gap-2">
+                <div class="text-right text-xs">
+                  <span class="text-slate-400 text-[10px] uppercase font-bold block">Poin Skuad Ini</span>
+                  <span class="font-mono font-black text-pl-green text-sm" id="pitch-total-points">47 Pts</span>
+                </div>
+                <div class="h-7 w-[1px] bg-white/10"></div>
+                <div class="text-right text-xs">
+                  <span class="text-slate-400 text-[10px] uppercase font-bold block">Kapten (C)</span>
+                  <span class="font-bold text-pl-gold text-xs" id="pitch-captain-name">Haaland (12 pts)</span>
+                </div>
+              </div>
+
+            </div>
+          </div>
+
+          <!-- REALISTIC 3D STADIUM PITCH CANVAS -->
+          <div class="pitch-container rounded-2xl p-3 sm:p-5 flex flex-col justify-between min-h-[580px] sm:min-h-[660px] overflow-hidden relative">
+            
+            <!-- Stadium Grass Markings -->
+            <!-- Halfway Line -->
+            <div class="absolute inset-x-0 top-1/2 -translate-y-1/2 h-0 border-t-2 pitch-line pointer-events-none"></div>
+            <!-- Center Circle -->
+            <div class="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-32 h-32 sm:w-40 sm:h-40 rounded-full border-2 pitch-line pointer-events-none"></div>
+            <!-- Center Spot -->
+            <div class="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-2.5 h-2.5 rounded-full bg-white/50 pointer-events-none"></div>
+            <!-- Top Penalty Box (Away) -->
+            <div class="absolute top-0 left-1/2 -translate-x-1/2 w-56 sm:w-64 h-24 border-b-2 border-l-2 border-r-2 pitch-line pointer-events-none"></div>
+            <div class="absolute top-0 left-1/2 -translate-x-1/2 w-28 sm:w-32 h-10 border-b-2 border-l-2 border-r-2 pitch-line pointer-events-none"></div>
+            <!-- Bottom Penalty Box (Home) -->
+            <div class="absolute bottom-0 left-1/2 -translate-x-1/2 w-56 sm:w-64 h-24 border-t-2 border-l-2 border-r-2 pitch-line pointer-events-none"></div>
+            <div class="absolute bottom-0 left-1/2 -translate-x-1/2 w-28 sm:w-32 h-10 border-t-2 border-l-2 border-r-2 pitch-line pointer-events-none"></div>
+
+            <!-- FWD Row (Top) -->
+            <div class="flex justify-center items-center gap-2 sm:gap-4 z-10 pt-2" id="pitch-fwd">
+              <!-- Dynamically Populated -->
+            </div>
+
             <!-- MID Row -->
-            <div class="flex justify-center gap-2 flex-wrap z-10" id="pitch-mid"></div>
+            <div class="flex justify-center items-center gap-2 sm:gap-3 flex-wrap z-10 my-auto py-2" id="pitch-mid">
+              <!-- Dynamically Populated -->
+            </div>
+
             <!-- DEF Row -->
-            <div class="flex justify-center gap-3 flex-wrap z-10" id="pitch-def"></div>
-            <!-- GK Row -->
-            <div class="flex justify-center z-10 pb-2" id="pitch-gk"></div>
+            <div class="flex justify-center items-center gap-2 sm:gap-4 flex-wrap z-10 my-auto py-2" id="pitch-def">
+              <!-- Dynamically Populated -->
+            </div>
+
+            <!-- GK Row (Bottom) -->
+            <div class="flex justify-center items-center z-10 pb-2" id="pitch-gk">
+              <!-- Dynamically Populated -->
+            </div>
+
           </div>
 
-          <!-- Bench Tray -->
-          <div class="mt-4 pt-3 border-t border-gray-800">
-            <h3 class="text-[10px] font-black uppercase tracking-wider text-gray-400 mb-2">Cadangan (Bench Substitutes)</h3>
-            <div class="grid grid-cols-4 gap-2" id="pitch-bench"></div>
+          <!-- BENCH TRAY (DUGOUT SUBSTITUTES) -->
+          <div class="mt-4 pt-3 border-t border-white/10">
+            <div class="flex items-center justify-between mb-2.5">
+              <div class="flex items-center gap-2">
+                <span class="text-[10px] font-black uppercase tracking-wider text-slate-300">Dugout Substitutes (Cadangan)</span>
+                <span class="text-[10px] px-2 py-0.5 rounded-full bg-white/5 border border-white/10 text-slate-400">Urutan Otomatis</span>
+              </div>
+              <span class="text-xs font-mono font-bold text-slate-400" id="bench-points-total">13 Pts di Bench</span>
+            </div>
+
+            <div class="grid grid-cols-2 sm:grid-cols-4 gap-2.5" id="pitch-bench">
+              <!-- Populated Dynamically -->
+            </div>
           </div>
+
         </div>
       </section>
 
-      <!-- Right: Transfer Planner Lab (5 cols) -->
+      <!-- RIGHT: SMART TRANSFER LAB & SIMULATOR (5 cols on Desktop) -->
       <section class="lg:col-span-5 space-y-4">
         
-        <!-- Planner Card -->
-        <div class="bg-gray-900/80 border border-emerald-500/30 rounded-2xl p-4 shadow-xl">
-          <div class="flex justify-between items-start mb-3">
+        <!-- Transfer Planner Hub Card -->
+        <div class="glass-panel rounded-2xl p-4 sm:p-5 border border-white/10">
+          
+          <div class="flex items-start justify-between gap-3 mb-3">
             <div>
-              <span class="text-[10px] tracking-wider font-extrabold uppercase text-emerald-400">Smart Transfer Lab</span>
-              <h2 class="text-sm font-bold text-gray-100" id="planner-title">Pilih Pemain di Lapangan</h2>
+              <div class="flex items-center gap-2">
+                <span class="px-2 py-0.5 rounded-md text-[10px] font-extrabold uppercase tracking-wider bg-purple-500/20 text-purple-300 border border-purple-500/30">
+                  SMART TRANSFER LAB
+                </span>
+                <span class="text-[11px] text-slate-400">Fixture & Form Intelligence</span>
+              </div>
+              <h2 class="text-base font-bold text-white mt-1" id="planner-header-title">
+                Pilih Pemain di Lapangan
+              </h2>
             </div>
-            <span class="text-xs font-mono font-bold px-2 py-0.5 rounded bg-gray-950 border border-gray-800 text-yellow-400" id="budget-calc">
-              Budget: £0.0m
-            </span>
-          </div>
 
-          <!-- Filter & Sorting Controls -->
-          <div id="planner-controls" class="hidden grid grid-cols-2 gap-2 mb-3 pt-2 border-t border-gray-800">
-            <div>
-              <label class="text-[9px] uppercase font-bold text-gray-400 block mb-1">Filter Klub</label>
-              <select id="filter-team" onchange="fetchTargets()" class="w-full bg-gray-950 border border-gray-800 text-gray-200 text-xs rounded-lg px-2.5 py-1.5 focus:outline-none focus:border-emerald-500">
-                <option value="0">Semua Klub PL</option>
-              </select>
-            </div>
-            <div>
-              <label class="text-[9px] uppercase font-bold text-gray-400 block mb-1">Urutan Prioritas</label>
-              <select id="sort-by" onchange="fetchTargets()" class="w-full bg-gray-950 border border-gray-800 text-gray-200 text-xs rounded-lg px-2.5 py-1.5 focus:outline-none focus:border-emerald-500">
-                <option value="fdr">Jadwal Termudah (FDR)</option>
-                <option value="form">Form Terpanas</option>
-                <option value="points">Total Poin</option>
-                <option value="cost_desc">Harga Tertinggi</option>
-              </select>
+            <!-- Live Total Transfer Budget Pill -->
+            <div class="text-right">
+              <span class="text-[9px] uppercase font-bold text-slate-400 block">Total Budget</span>
+              <span class="font-mono text-sm sm:text-base font-black text-pl-gold px-2.5 py-1 rounded-lg bg-[#070417] border border-pl-gold/30 inline-block mt-0.5" id="planner-budget-display">
+                £1.8m
+              </span>
             </div>
           </div>
 
-          <div id="planner-instructions" class="text-xs text-gray-400 py-4 text-center border-t border-gray-800">
-            👈 Klik kartu pemain di formasi lapangan untuk memunculkan target pengganti yang sesuai budget.
+          <!-- MARKET RADAR & PRICE ALERT BANNER -->
+          <div id="market-alert-banner" class="mb-3 p-3 rounded-xl bg-gradient-to-r from-blue-950/50 via-indigo-950/40 to-[#070417] border border-cyan-500/30 shadow-lg flex flex-wrap items-center justify-between gap-2.5">
+            <div class="flex items-center gap-2.5">
+              <div class="w-8 h-8 rounded-lg bg-cyan-500/20 border border-cyan-400/40 flex items-center justify-center text-cyan-300 text-sm flex-shrink-0">
+                📈
+              </div>
+              <div>
+                <div class="flex items-center gap-1.5">
+                  <span class="text-[10px] font-black uppercase tracking-wider text-cyan-300">Market Radar & Price Alert</span>
+                  <span class="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-ping"></span>
+                </div>
+                <p class="text-xs text-slate-300 mt-0.5" id="market-alert-summary">
+                  Memuat radar pergerakan harga transfer...
+                </p>
+              </div>
+            </div>
+            <button onclick="openMarketModal()" class="px-3 py-1.5 rounded-xl bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-300 border border-cyan-400/40 text-xs font-black transition flex items-center gap-1.5 cursor-pointer shadow-md">
+              <span>Radar Pasar</span>
+              <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
+            </button>
           </div>
 
-          <!-- Recommendations Box -->
-          <div id="planner-recs" class="hidden space-y-2">
-            <div class="flex justify-between items-center text-xs">
-              <span class="font-bold text-gray-300">Rekomendasi Transfer In</span>
-              <span class="text-emerald-400 font-mono text-[10px]" id="recs-count">0 opsi</span>
+          <!-- Selected Outgoing Player Highlight Card -->
+          <div id="outgoing-player-banner" class="hidden mb-3 p-3 rounded-xl bg-gradient-to-r from-rose-950/40 to-[#170a25] border border-rose-500/30">
+            <div class="flex items-center justify-between">
+              <div class="flex items-center gap-3">
+                <div class="relative flex-shrink-0">
+                  <img id="outgoing-photo" src="" class="w-11 h-11 rounded-full border border-rose-400/40 bg-slate-900 object-contain" />
+                  <img id="outgoing-club-badge" src="" class="absolute -bottom-1 -right-1 w-4 h-4 object-contain rounded-full bg-[#070417] p-[1px] border border-white/20" />
+                </div>
+                <div>
+                  <span class="text-[9px] font-extrabold uppercase text-rose-400 tracking-wider">Transfer Keluar (OUT)</span>
+                  <div class="font-bold text-sm text-white flex items-center gap-1.5" id="outgoing-name">
+                    Player Name
+                  </div>
+                  <div class="text-[11px] text-slate-300 font-mono" id="outgoing-meta">
+                    £0.0m • Form: 0.0 • 0 Pts
+                  </div>
+                </div>
+              </div>
+              <button onclick="deselectPlayer()" class="text-xs text-slate-400 hover:text-white px-2 py-1 rounded bg-white/5 border border-white/10">
+                Batal
+              </button>
             </div>
+          </div>
+
+          <!-- Filter & Search Controls -->
+          <div class="space-y-2.5 mb-3 pt-2 border-t border-white/10">
             
-            <div class="overflow-y-auto max-h-[340px] divide-y divide-gray-800/80 pr-1 text-xs" id="recs-list"></div>
+            <!-- Position Tabs Filter -->
+            <div class="flex items-center gap-1.5 overflow-x-auto pb-1" id="filter-position-buttons">
+              <button onclick="setPositionFilter(0)" data-pos="0" class="pos-filter-btn active px-3 py-1 rounded-lg text-xs font-bold bg-pl-green text-[#070417]">Semua</button>
+              <button onclick="setPositionFilter(1)" data-pos="1" class="pos-filter-btn px-3 py-1 rounded-lg text-xs font-bold bg-white/5 text-slate-300 hover:bg-white/10">🧤 GK</button>
+              <button onclick="setPositionFilter(2)" data-pos="2" class="pos-filter-btn px-3 py-1 rounded-lg text-xs font-bold bg-white/5 text-slate-300 hover:bg-white/10">🛡️ DEF</button>
+              <button onclick="setPositionFilter(3)" data-pos="3" class="pos-filter-btn px-3 py-1 rounded-lg text-xs font-bold bg-white/5 text-slate-300 hover:bg-white/10">⚡ MID</button>
+              <button onclick="setPositionFilter(4)" data-pos="4" class="pos-filter-btn px-3 py-1 rounded-lg text-xs font-bold bg-white/5 text-slate-300 hover:bg-white/10">🎯 FWD</button>
+            </div>
+
+            <!-- Search and Club Filters -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+              <div>
+                <label class="text-[9px] uppercase font-bold text-slate-400 block mb-1">Cari Pemain</label>
+                <div class="relative">
+                  <input type="text" id="filter-search" oninput="onSearchInput()" placeholder="Nama pemain..." class="w-full bg-[#070417] border border-white/10 text-white text-xs rounded-lg pl-8 pr-2.5 py-1.5 focus:outline-none focus:border-pl-green placeholder:text-slate-500">
+                  <svg class="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-1/2 -translate-y-1/2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                  </svg>
+                </div>
+              </div>
+
+              <div>
+                <label class="text-[9px] uppercase font-bold text-slate-400 block mb-1">Filter Klub PL</label>
+                <select id="filter-team" onchange="fetchTargets()" class="w-full bg-[#070417] border border-white/10 text-white text-xs rounded-lg px-2.5 py-1.5 focus:outline-none focus:border-pl-green">
+                  <option value="0">Semua 20 Klub PL</option>
+                </select>
+              </div>
+            </div>
+
+            <!-- Sort By & Budget Slider -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+              <div>
+                <label class="text-[9px] uppercase font-bold text-slate-400 block mb-1">Urutan Rekomendasi</label>
+                <select id="sort-by" onchange="fetchTargets()" class="w-full bg-[#070417] border border-white/10 text-white text-xs rounded-lg px-2.5 py-1.5 focus:outline-none focus:border-pl-green">
+                  <option value="fdr">🗓️ Jadwal Termudah (FDR 3 GW)</option>
+                  <option value="form">🔥 Form Terpanas</option>
+                  <option value="points">⭐ Total Poin Tertinggi</option>
+                  <option value="ep_next">🎯 Expected Points (xP Next GW)</option>
+                  <option value="value">💎 Value for Money (Pts/£)</option>
+                  <option value="ict">⚡ Threat & ICT Index</option>
+                  <option value="cost_desc">💰 Harga: Tertinggi ke Terendah</option>
+                  <option value="cost_asc">🏷️ Harga: Terendah ke Tertinggi</option>
+                </select>
+              </div>
+
+              <div>
+                <div class="flex justify-between items-center mb-1">
+                  <label class="text-[9px] uppercase font-bold text-slate-400">Maksimal Harga</label>
+                  <span class="text-[10px] font-mono font-bold text-pl-green" id="budget-slider-val">£15.0m</span>
+                </div>
+                <input type="range" id="filter-budget-slider" min="38" max="160" value="150" step="1" oninput="onBudgetSliderChange(this.value)" class="w-full accent-pl-green cursor-pointer">
+              </div>
+            </div>
+
           </div>
+
+          <!-- Transfer In Candidates List Container -->
+          <div class="space-y-2 mt-3">
+            <div class="flex items-center justify-between text-xs pb-1 border-b border-white/5">
+              <span class="font-bold text-slate-200">Rekomendasi Transfer Masuk (IN)</span>
+              <span class="text-[10px] font-mono text-pl-green" id="recs-count">Memuat target...</span>
+            </div>
+
+            <!-- Candidate List -->
+            <div class="overflow-y-auto max-h-[380px] space-y-1.5 pr-1" id="recs-list">
+              <!-- Rendered via JS -->
+            </div>
+          </div>
+
         </div>
 
-        <!-- Simulation Impact Preview -->
-        <div class="bg-gray-900/80 border border-gray-800 rounded-2xl p-4 shadow-xl">
-          <h3 class="text-xs font-bold uppercase tracking-wider text-gray-300 mb-2">Simulasi Dampak Skuad</h3>
-          <div class="text-xs text-gray-400" id="impact-preview">
-            <p>Pilih pemain transfer in untuk preview sisa budget & jadwal lawan.</p>
+        <!-- SIMULATION IMPACT WIDGET -->
+        <div class="glass-panel rounded-2xl p-4 sm:p-5 border border-white/10 relative overflow-hidden" id="simulation-panel">
+          <div class="flex items-center justify-between mb-2.5">
+            <h3 class="text-xs font-black uppercase tracking-wider text-slate-200 flex items-center gap-1.5">
+              <span>⚡</span> Simulasi Dampak Skuad
+            </h3>
+            <span class="text-[10px] px-2 py-0.5 rounded bg-white/5 border border-white/10 text-slate-400">Live Preview</span>
+          </div>
+
+          <div id="impact-preview-content">
+            <div class="text-center py-6 text-slate-400 text-xs">
+              <p>👈 Pilih pemain keluar di formasi lapangan, lalu klik <strong class="text-pl-green">Preview Swap</strong> pada kandidat pemain masuk.</p>
+            </div>
           </div>
         </div>
 
       </section>
 
     </div>
+
+    <!-- VIEW 2: MANAGER INSIGHTS & LEAGUES (Secondary Tab) -->
+    <div id="view-insights" class="hidden space-y-6">
+      
+      <!-- Top Row: Chips Tracker & Squad Financial Breakdown -->
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        
+        <!-- Chip 1: Triple Captain -->
+        <div class="glass-panel p-4 rounded-2xl border border-white/10" id="chip-card-3xc">
+          <div class="flex justify-between items-start mb-2">
+            <span class="text-xs font-extrabold uppercase text-slate-400">Triple Captain (3xC)</span>
+            <span class="text-[10px] px-2 py-0.5 rounded-full font-bold bg-purple-500/20 text-purple-300 border border-purple-500/30" id="chip-status-3xc">Played GW3</span>
+          </div>
+          <div class="text-sm font-bold text-white mt-1">3x Lipat Poin Kapten</div>
+          <p class="text-[11px] text-slate-400 mt-1">Digunakan pada Gameweek 3 (31 Agu 2026).</p>
+        </div>
+
+        <!-- Chip 2: Wildcard -->
+        <div class="glass-panel p-4 rounded-2xl border border-white/10" id="chip-card-wildcard">
+          <div class="flex justify-between items-start mb-2">
+            <span class="text-xs font-extrabold uppercase text-slate-400">Wildcard 1</span>
+            <span class="text-[10px] px-2 py-0.5 rounded-full font-bold bg-pl-green/20 text-pl-green border border-pl-green/30" id="chip-status-wildcard">Tersedia</span>
+          </div>
+          <div class="text-sm font-bold text-white mt-1">Unlimited Free Transfers</div>
+          <p class="text-[11px] text-slate-400 mt-1">Berlaku permanen hingga paruh musim (GW19).</p>
+        </div>
+
+        <!-- Chip 3: Free Hit -->
+        <div class="glass-panel p-4 rounded-2xl border border-white/10" id="chip-card-freehit">
+          <div class="flex justify-between items-start mb-2">
+            <span class="text-xs font-extrabold uppercase text-slate-400">Free Hit</span>
+            <span class="text-[10px] px-2 py-0.5 rounded-full font-bold bg-pl-green/20 text-pl-green border border-pl-green/30" id="chip-status-freehit">Tersedia</span>
+          </div>
+          <div class="text-sm font-bold text-white mt-1">1 Gameweek Squad Reset</div>
+          <p class="text-[11px] text-slate-400 mt-1">Skuad kembali ke awal setelah gameweek berakhir.</p>
+        </div>
+
+        <!-- Chip 4: Bench Boost -->
+        <div class="glass-panel p-4 rounded-2xl border border-white/10" id="chip-card-bboost">
+          <div class="flex justify-between items-start mb-2">
+            <span class="text-xs font-extrabold uppercase text-slate-400">Bench Boost</span>
+            <span class="text-[10px] px-2 py-0.5 rounded-full font-bold bg-pl-green/20 text-pl-green border border-pl-green/30" id="chip-status-bboost">Tersedia</span>
+          </div>
+          <div class="text-sm font-bold text-white mt-1">Poin 4 Cadangan Dihitung</div>
+          <p class="text-[11px] text-slate-400 mt-1">Cocok digunakan saat Double Gameweek.</p>
+        </div>
+
+      </div>
+
+      <!-- Mid Row: GW History & Mini-Leagues Standings -->
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        
+        <!-- Gameweek Progression History (7 cols) -->
+        <div class="lg:col-span-7 glass-panel rounded-2xl p-5 border border-white/10">
+          <div class="flex items-center justify-between mb-4">
+            <div>
+              <h3 class="text-base font-bold text-white">Riwayat Gameweek Musim Ini</h3>
+              <p class="text-xs text-slate-400">Performa poin dan pergerakan rank per pekan</p>
+            </div>
+            <span class="text-xs font-mono font-bold text-pl-green bg-pl-green/10 border border-pl-green/30 px-2.5 py-1 rounded-lg">
+              GW1 - GW5
+            </span>
+          </div>
+
+          <div class="overflow-x-auto">
+            <table class="w-full text-xs text-left">
+              <thead class="text-[10px] uppercase font-bold text-slate-400 border-b border-white/10 bg-white/5">
+                <tr>
+                  <th class="py-2.5 px-3">Gameweek</th>
+                  <th class="py-2.5 px-3">Poin</th>
+                  <th class="py-2.5 px-3">Total</th>
+                  <th class="py-2.5 px-3">GW Rank</th>
+                  <th class="py-2.5 px-3">Overall Rank</th>
+                  <th class="py-2.5 px-3">Transfer (Hit)</th>
+                  <th class="py-2.5 px-3">Bench Pts</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-white/5 font-mono" id="gw-history-table">
+                <!-- Injected via JS -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Classic Mini-Leagues Standings (5 cols) -->
+        <div class="lg:col-span-5 glass-panel rounded-2xl p-5 border border-white/10">
+          <div class="flex items-center justify-between mb-4">
+            <div>
+              <h3 class="text-base font-bold text-white">Klasemen Liga & Mini-League</h3>
+              <p class="text-xs text-slate-400">Peringkat di liga publik & privat yang diikuti</p>
+            </div>
+            <span class="text-xs font-extrabold text-pl-gold">🏆 Standings</span>
+          </div>
+
+          <div class="space-y-2 overflow-y-auto max-h-[360px] pr-1" id="mini-leagues-list">
+            <!-- Injected via JS -->
+          </div>
+        </div>
+
+      </div>
+
+    </div>
+
+  </main>
+
+  <!-- HEAD-TO-HEAD PLAYER COMPARE MODAL -->
+  <div id="compare-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/80 backdrop-blur-md modal-backdrop">
+    <div class="glass-panel w-full max-w-3xl rounded-2xl border border-white/20 p-5 sm:p-6 shadow-2xl relative overflow-hidden">
+      
+      <!-- Close button -->
+      <button onclick="closeCompareModal()" class="absolute top-4 right-4 w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-slate-300 hover:text-white transition">
+        ✕
+      </button>
+
+      <div class="flex items-center gap-2 mb-4">
+        <span class="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-cyan-500/20 text-cyan-300 border border-cyan-500/30">
+          HEAD-TO-HEAD COMPARISON
+        </span>
+        <h3 class="text-base font-black text-white">Komparasi Detail Pemain</h3>
+      </div>
+
+      <div id="compare-modal-content">
+        <!-- Injected via JS -->
+      </div>
+
+    </div>
   </div>
 
+  <!-- MARKET TRENDS & PRICE ALERT MODAL -->
+  <div id="market-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/80 backdrop-blur-md modal-backdrop">
+    <div class="glass-panel w-full max-w-4xl rounded-2xl border border-white/20 p-5 sm:p-6 shadow-2xl relative overflow-hidden flex flex-col max-h-[90vh]">
+      
+      <!-- Close button -->
+      <button onclick="closeMarketModal()" class="absolute top-4 right-4 w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-slate-300 hover:text-white transition cursor-pointer">
+        ✕
+      </button>
+
+      <!-- Modal Title -->
+      <div class="flex items-center gap-2 mb-4 flex-shrink-0">
+        <span class="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-cyan-500/20 text-cyan-300 border border-cyan-500/30">
+          MARKET RADAR & PRICE ALERT
+        </span>
+        <h3 class="text-base sm:text-lg font-black text-white">Radar Pasar & Fluktuasi Harga Transfer</h3>
+      </div>
+
+      <!-- Navigation Tabs inside Modal -->
+      <div class="flex items-center gap-2 mb-4 border-b border-white/10 pb-2.5 flex-shrink-0 overflow-x-auto" id="mkt-nav-tabs">
+        <button onclick="switchMarketTab('squad')" id="mkt-tab-squad" class="px-3.5 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 bg-pl-green text-[#070417] shadow-sm cursor-pointer">
+          <span>⚠️</span> Radar Skuad Saya (<span id="mkt-squad-count">0</span>)
+        </button>
+        <button onclick="switchMarketTab('top_in')" id="mkt-tab-top_in" class="px-3.5 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 bg-white/5 hover:bg-white/10 text-slate-300 border border-white/5 cursor-pointer">
+          <span>🔥</span> Top 5 Paling Diburu (IN)
+        </button>
+        <button onclick="switchMarketTab('top_out')" id="mkt-tab-top_out" class="px-3.5 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 bg-white/5 hover:bg-white/10 text-slate-300 border border-white/5 cursor-pointer">
+          <span>❄️</span> Top 5 Paling Dilepas (OUT)
+        </button>
+      </div>
+
+      <!-- Modal Body (Scrollable) -->
+      <div class="overflow-y-auto pr-1 flex-1 space-y-3" id="market-modal-body">
+        <!-- Injected via JS -->
+      </div>
+
+    </div>
+  </div>
+
+  <!-- SHARE SQUAD CARD / EXPORT IMAGE MODAL -->
+  <div id="share-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/85 backdrop-blur-md modal-backdrop">
+    <div class="glass-panel w-full max-w-2xl rounded-2xl border border-white/20 p-4 sm:p-6 shadow-2xl relative flex flex-col max-h-[92vh] overflow-hidden">
+      
+      <!-- Close button -->
+      <button onclick="closeShareModal()" class="absolute top-4 right-4 w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-slate-300 hover:text-white transition z-20 cursor-pointer">
+        ✕
+      </button>
+
+      <!-- Modal Title -->
+      <div class="flex items-center gap-2 mb-3 flex-shrink-0">
+        <span class="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+          SQUAD CARD EXPORT
+        </span>
+        <h3 class="text-base sm:text-lg font-black text-white">Bagikan Kartu Starting XI</h3>
+      </div>
+
+      <!-- Toast Feedback -->
+      <div id="share-toast" class="hidden mb-3 p-2.5 rounded-xl bg-emerald-500/20 border border-emerald-500/50 text-emerald-300 text-xs font-bold text-center">
+        ✅ Berhasil disalin ke clipboard! Siap di-paste ke WhatsApp.
+      </div>
+
+      <!-- Action Buttons Bar -->
+      <div class="flex flex-wrap items-center justify-between gap-2 mb-3 bg-[#070417] p-2.5 rounded-xl border border-white/10 flex-shrink-0">
+        <span class="text-xs text-slate-400 font-medium">Pilih Aksi Bagikan:</span>
+        <div class="flex items-center gap-2">
+          <button onclick="downloadSquadCard()" id="btn-dl-squad" class="px-3 py-1.5 rounded-lg bg-pl-green hover:bg-emerald-400 text-[#070417] font-black text-xs transition flex items-center gap-1.5 shadow-md cursor-pointer">
+            <span>📥</span> Download HD PNG
+          </button>
+          <button onclick="copySquadImage()" id="btn-copy-img" class="px-3 py-1.5 rounded-lg bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-300 border border-cyan-400/30 font-bold text-xs transition flex items-center gap-1.5 cursor-pointer">
+            <span>📋</span> Salin Gambar
+          </button>
+          <button onclick="copySquadText()" class="px-3 py-1.5 rounded-lg bg-white/10 hover:bg-white/15 text-slate-200 border border-white/10 font-bold text-xs transition flex items-center gap-1.5 cursor-pointer">
+            <span>💬</span> Salin Teks WA
+          </button>
+        </div>
+      </div>
+
+      <!-- Preview Canvas Area (Container captured by html2canvas) -->
+      <div class="overflow-y-auto flex-1 p-2 rounded-xl bg-[#060a14] border border-white/10 flex justify-center">
+        
+        <!-- THE CARD TO CAPTURE -->
+        <div id="squad-export-card" class="w-full max-w-[540px] bg-gradient-to-b from-[#0b1329] via-[#091024] to-[#050811] rounded-2xl border-2 border-white/15 p-4 text-white shadow-2xl relative overflow-hidden select-none">
+          
+          <!-- Card Ambient Glow -->
+          <div class="absolute -top-16 -left-16 w-44 h-44 bg-cyan-500/20 rounded-full blur-3xl pointer-events-none"></div>
+          <div class="absolute -top-16 -right-16 w-44 h-44 bg-emerald-500/20 rounded-full blur-3xl pointer-events-none"></div>
+
+          <!-- Card Header -->
+          <div class="flex items-center justify-between border-b border-white/10 pb-3 mb-3 relative z-10">
+            <div class="flex items-center gap-2.5">
+              <div class="w-9 h-9 rounded-xl bg-gradient-to-br from-pl-purple to-indigo-900 p-[1.5px] shadow flex-shrink-0">
+                <div class="w-full h-full bg-[#120728] rounded-[10px] flex items-center justify-center">
+                  <span class="text-sm font-black text-pl-green">PL</span>
+                </div>
+              </div>
+              <div>
+                <span class="text-[9px] font-mono tracking-widest text-pl-green font-extrabold uppercase block">FPL COMMAND CENTER • MATCHDAY</span>
+                <h4 class="text-base font-black text-white leading-tight" id="exp-team-name">Maulana Zaky's Team</h4>
+                <p class="text-[10px] text-slate-400">Manager: <strong class="text-slate-200" id="exp-manager-name">Maulana Zaky Haq</strong></p>
+              </div>
+            </div>
+            <div class="text-right">
+              <span class="px-2 py-0.5 rounded text-[9px] font-black uppercase tracking-wider bg-pl-green/20 text-pl-green border border-pl-green/30" id="exp-gw-badge">GW5</span>
+              <div class="text-sm font-black font-mono text-cyan-300 mt-0.5" id="exp-points">47 Pts</div>
+              <div class="text-[9px] text-slate-400 font-mono" id="exp-rank">#2,622,015</div>
+            </div>
+          </div>
+
+          <!-- Mini Stadium Pitch for Export -->
+          <div class="rounded-xl p-3 bg-gradient-to-b from-[#113a25] via-[#0d2e1e] to-[#0a2317] border border-emerald-500/30 relative overflow-hidden mb-3">
+            <!-- Stadium markings -->
+            <div class="absolute inset-x-0 top-1/2 -translate-y-1/2 h-0 border-t border-white/20 pointer-events-none"></div>
+            <div class="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-20 h-20 rounded-full border border-white/20 pointer-events-none"></div>
+            <div class="absolute top-0 left-1/2 -translate-x-1/2 w-36 h-12 border-b border-l border-r border-white/20 pointer-events-none"></div>
+            <div class="absolute bottom-0 left-1/2 -translate-x-1/2 w-36 h-12 border-t border-l border-r border-white/20 pointer-events-none"></div>
+
+            <!-- Pitch Rows -->
+            <div class="flex justify-center items-center gap-2 z-10 pt-1 pb-1" id="exp-pitch-fwd"></div>
+            <div class="flex justify-center items-center gap-2 z-10 py-1" id="exp-pitch-mid"></div>
+            <div class="flex justify-center items-center gap-2 z-10 py-1" id="exp-pitch-def"></div>
+            <div class="flex justify-center items-center gap-2 z-10 pt-1 pb-0.5" id="exp-pitch-gk"></div>
+          </div>
+
+          <!-- Subs Bench Tray -->
+          <div class="bg-[#070c18] rounded-xl p-2.5 border border-white/10 mb-3">
+            <div class="text-[9px] font-mono font-bold uppercase tracking-wider text-slate-400 mb-1.5 flex items-center justify-between">
+              <span>🪑 Bangku Cadangan (Substitutes)</span>
+              <span class="text-slate-500">Auto-sub Priority 1-3</span>
+            </div>
+            <div class="grid grid-cols-4 gap-1.5" id="exp-pitch-bench"></div>
+          </div>
+
+          <!-- Card Footer Metadata -->
+          <div class="flex items-center justify-between text-[10px] text-slate-400 border-t border-white/10 pt-2 font-mono">
+            <div>
+              Formasi: <strong class="text-white" id="exp-formation">3-5-2</strong> • Bank: <strong class="text-pl-gold" id="exp-bank">£1.8m</strong>
+            </div>
+            <div class="text-right text-[9px] text-slate-500">
+              Verified by Premier League API
+            </div>
+          </div>
+
+        </div>
+
+      </div>
+
+    </div>
+  </div>
+
+  <!-- JAVASCRIPT LOGIC -->
   <script>
     let appData = null;
     let selectedPlayer = null;
+    let simulationTarget = null;
+    let activePosFilter = 0;
+    let cachedTargets = [];
 
-    // Club Jersey Color Map
+    // Club Color Hex Map
     const clubColors = {
-      'MCI': '#6CABDD', 'ARS': '#EF0107', 'LIV': '#C8102E', 'CHE': '#034694',
-      'MUN': '#DA291C', 'NEW': '#241F20', 'TOT': '#132257', 'AVL': '#95BFE5',
-      'BHA': '#0057B8', 'BRE': '#E30613', 'EVE': '#003399', 'NFO': '#DD0000',
-      'FUL': '#CC0000', 'WOL': '#FDB913', 'BOU': '#DA291C', 'CRY': '#1B458F',
-      'WHU': '#7A263A', 'IPS': '#0053A0', 'LEI': '#003090', 'SOU': '#D71920'
+      'ARS': '#EF0107', 'AVL': '#95BFE5', 'BOU': '#DA291C', 'BRE': '#E30613',
+      'BHA': '#0057B8', 'CHE': '#034694', 'COV': '#00A3E0', 'CRY': '#1B458F',
+      'EVE': '#003399', 'FUL': '#CC0000', 'HUL': '#F5A800', 'IPS': '#0053A0',
+      'LEE': '#FFCD00', 'LIV': '#C8102E', 'MCI': '#6CABDD', 'MUN': '#DA291C',
+      'NEW': '#241F20', 'NFO': '#DD0000', 'TOT': '#132257', 'SUN': '#EB172B'
     };
 
-    function getJerseyIcon(teamShort) {
-      const color = clubColors[teamShort] || '#10B981';
-      return `
-        <svg class="w-6 h-6 mx-auto drop-shadow" viewBox="0 0 24 24" fill="${color}" xmlns="http://www.w3.org/2000/svg">
-          <path d="M7 3L2 8L5 11L7 9V21H17V9L19 11L22 8L17 3H14C14 4.1 13.1 5 12 5C10.9 5 10 4.1 10 3H7Z" stroke="#000" stroke-width="1.2"/>
-        </svg>
-      `;
+    // Theme Definitions & System
+    const THEMES = {
+      slate: { name: 'Titanium Slate', icon: '❄️', primary: '#38bdf8' },
+      pl: { name: 'Premier League', icon: '💜', primary: '#00ff87' },
+      emerald: { name: 'Midnight Emerald', icon: '🌲', primary: '#10b981' },
+      cyber: { name: 'Cyber Neon', icon: '⚡', primary: '#00f0ff' },
+      royal: { name: 'Royal Blue & Gold', icon: '👑', primary: '#ffc72c' },
+      crimson: { name: 'Crimson Stadium', icon: '🔴', primary: '#ff4d6d' }
+    };
+
+    let currentTheme = localStorage.getItem('fpl_theme') || 'slate';
+
+    function setTheme(themeKey, e) {
+      if (e) {
+        e.stopPropagation();
+        e.preventDefault();
+      }
+      if (!THEMES[themeKey]) themeKey = 'slate';
+      currentTheme = themeKey;
+      document.documentElement.setAttribute('data-theme', themeKey);
+      document.body.setAttribute('data-theme', themeKey);
+      localStorage.setItem('fpl_theme', themeKey);
+      
+      const t = THEMES[themeKey];
+      const iconEl = document.getElementById('theme-icon-display');
+      const nameEl = document.getElementById('theme-name-display');
+      if (iconEl) iconEl.innerText = t.icon;
+      if (nameEl) nameEl.innerText = t.name;
+
+      document.querySelectorAll('.theme-option-btn').forEach(btn => {
+        const key = btn.getAttribute('data-theme-key');
+        if (key === themeKey) {
+          btn.classList.add('bg-white/15', 'border-white/20');
+          btn.querySelector('.theme-check')?.classList.remove('hidden');
+        } else {
+          btn.classList.remove('bg-white/15', 'border-white/20');
+          btn.querySelector('.theme-check')?.classList.add('hidden');
+        }
+      });
+
+      const menu = document.getElementById('theme-dropdown-menu');
+      if (menu) menu.classList.add('hidden');
     }
 
-    function renderCard(p) {
+    function toggleThemeMenu(e) {
+      if (e) {
+        e.stopPropagation();
+        e.preventDefault();
+      }
+      const menu = document.getElementById('theme-dropdown-menu');
+      if (menu) {
+        menu.classList.toggle('hidden');
+      }
+    }
+
+    document.addEventListener('click', (e) => {
+      const container = document.getElementById('theme-dropdown-container');
+      if (container && !container.contains(e.target)) {
+        document.getElementById('theme-dropdown-menu')?.classList.add('hidden');
+      }
+    });
+
+    let playerDisplayMode = 'hybrid'; // 'hybrid' | 'kit' | 'photo'
+
+    function getPlayerPhotoUrl(code) {
+      return `https://resources.premierleague.com/premierleague/photos/players/250x250/p${code}.png`;
+    }
+
+    function getClubBadgeUrl(teamCode) {
+      return `https://resources.premierleague.com/premierleague/badges/70/t${teamCode}.png`;
+    }
+
+    function getClubKitUrl(teamCode, elType) {
+      const gk = (elType === 1) ? '_1' : '';
+      return `https://fantasy.premierleague.com/dist/img/shirts/standard/shirt_${teamCode}${gk}-110.webp`;
+    }
+
+    function setDisplayMode(mode) {
+      playerDisplayMode = mode;
+      ['hybrid', 'kit', 'photo'].forEach(m => {
+        const btn = document.getElementById(`disp-mode-${m}`);
+        if (btn) {
+          if (m === mode) {
+            btn.className = 'px-2 py-0.5 rounded-lg font-bold bg-pl-green text-[#070417] shadow transition';
+          } else {
+            btn.className = 'px-2 py-0.5 rounded-lg font-bold bg-white/5 text-slate-300 hover:bg-white/10 transition';
+          }
+        }
+      });
+      renderPitch();
+    }
+
+    function getFdrClass(fdr) {
+      if (fdr <= 2) return 'fdr-2';
+      if (fdr === 3) return 'fdr-3';
+      if (fdr === 4) return 'fdr-4';
+      return 'fdr-5';
+    }
+
+    // Switch between Main Pitch View and Insights Tab
+    function switchTab(tabId) {
+      document.querySelectorAll('.tab-btn').forEach(b => {
+        b.classList.remove('bg-pl-green', 'text-[#070417]', 'shadow-lg');
+        b.classList.add('bg-white/5', 'text-slate-300');
+      });
+
+      if (tabId === 'pitch' || tabId === 'planner') {
+        document.getElementById('view-dashboard').classList.remove('hidden');
+        document.getElementById('view-insights').classList.add('hidden');
+        const activeBtn = document.getElementById('tab-btn-pitch');
+        if (activeBtn) {
+          activeBtn.classList.remove('bg-white/5', 'text-slate-300');
+          activeBtn.classList.add('bg-pl-green', 'text-[#070417]', 'shadow-lg');
+        }
+        if (tabId === 'planner' && window.innerWidth < 1024) {
+          document.getElementById('planner-header-title')?.scrollIntoView({ behavior: 'smooth' });
+        }
+      } else if (tabId === 'insights') {
+        document.getElementById('view-dashboard').classList.add('hidden');
+        document.getElementById('view-insights').classList.remove('hidden');
+        const activeBtn = document.getElementById('tab-btn-insights');
+        if (activeBtn) {
+          activeBtn.classList.remove('bg-white/5', 'text-slate-300');
+          activeBtn.classList.add('bg-pl-green', 'text-[#070417]', 'shadow-lg');
+        }
+      }
+    }
+
+    // Render single player card on pitch
+    function renderPlayerCard(p, isBench = false) {
       const isSelected = selectedPlayer && selectedPlayer.element_id === p.element_id;
-      const capBadge = p.is_captain ? '<span class="bg-gradient-to-r from-amber-400 to-yellow-500 text-black font-black text-[9px] px-1.5 py-0.2 rounded shadow">C</span>' : 
-                       p.is_vice_captain ? '<span class="bg-gray-300 text-black font-bold text-[9px] px-1 rounded">V</span>' : '';
-      
-      const borderClass = isSelected ? 'border-2 border-emerald-400 ring-4 ring-emerald-500/30' : 
-                          p.is_captain ? 'border border-yellow-500 shadow-yellow-500/20 shadow-md' : 'border border-gray-700/60';
+      const isSimulated = p.is_simulated;
+
+      const capBadge = p.is_captain ? '<span class="bg-gradient-to-r from-amber-400 to-yellow-500 text-black font-black text-[9px] px-1.5 py-0.2 rounded shadow-md ring-1 ring-yellow-400">C</span>' : 
+                       p.is_vice_captain ? '<span class="bg-slate-300 text-black font-extrabold text-[9px] px-1 rounded">V</span>' : '';
+
+      const teamBg = clubColors[p.team_short] || '#38003c';
+      const fdr1 = (p.upcoming_fixtures && p.upcoming_fixtures.length > 0) ? p.upcoming_fixtures[0] : null;
+      const fdrBadge = fdr1 ? `
+        <span class="text-[8px] font-mono px-1 rounded ${getFdrClass(fdr1.fdr)}">
+          ${fdr1.opp} (${fdr1.is_home ? 'H' : 'A'})
+        </span>
+      ` : '';
+
+      const doubtFlag = (p.chance_of_playing_next_round !== null && p.chance_of_playing_next_round !== undefined && p.chance_of_playing_next_round < 100) ? `
+        <span title="${p.news || 'Pemain diragukan tampil'}" class="cursor-help text-[8px] px-1 py-0.2 rounded bg-amber-500/20 text-amber-300 border border-amber-500/40 font-bold">
+          ⚠️ ${p.chance_of_playing_next_round}%
+        </span>
+      ` : '';
+
+      // Visual Content depending on display mode
+      let visualContent = '';
+      if (playerDisplayMode === 'kit') {
+        // 100% Guaranteed Official Club Jersey of current club
+        visualContent = `
+          <div class="relative w-12 h-12 sm:w-14 sm:h-14 mx-auto my-0.5 flex items-center justify-center">
+            <img src="${getClubKitUrl(p.team_code, p.element_type)}" 
+                 class="w-full h-full object-contain filter drop-shadow group-hover:scale-105 transition" 
+                 alt="${p.web_name}" />
+            ${isSimulated ? '<span class="absolute -top-1 -right-1 bg-pink-500 text-[8px] font-bold text-white px-1 rounded shadow">SIM</span>' : ''}
+          </div>
+        `;
+      } else if (playerDisplayMode === 'photo') {
+        // Full HD Official Headshot Photo
+        visualContent = `
+          <div class="relative w-12 h-12 sm:w-14 sm:h-14 mx-auto my-0.5">
+            <img src="${getPlayerPhotoUrl(p.code)}" 
+                 onerror="this.onerror=null; this.src='${getClubKitUrl(p.team_code, p.element_type)}'" 
+                 class="w-full h-full object-contain filter drop-shadow group-hover:scale-105 transition" 
+                 alt="${p.web_name}" />
+            ${isSimulated ? '<span class="absolute -top-1 -right-1 bg-pink-500 text-[8px] font-bold text-white px-1 rounded shadow">SIM</span>' : ''}
+          </div>
+        `;
+      } else {
+        // Hybrid Mode: HD Headshot + Official Club Crest Badge Overlay
+        visualContent = `
+          <div class="relative w-12 h-12 sm:w-14 sm:h-14 mx-auto my-0.5">
+            <img src="${getPlayerPhotoUrl(p.code)}" 
+                 onerror="this.onerror=null; this.src='${getClubKitUrl(p.team_code, p.element_type)}'" 
+                 class="w-full h-full object-contain filter drop-shadow group-hover:scale-105 transition" 
+                 alt="${p.web_name}" />
+            <!-- Official Club Badge Crest (Guaranteed Current Club) -->
+            <img src="${getClubBadgeUrl(p.team_code)}" 
+                 title="Klub Saat Ini: ${p.team_short}" 
+                 class="absolute -bottom-1 -right-1 w-5 h-5 object-contain filter drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)] bg-[#070417]/90 rounded-full p-[1px] border border-white/20" />
+            ${isSimulated ? '<span class="absolute -top-1 -right-1 bg-pink-500 text-[8px] font-bold text-white px-1 rounded shadow">SIM</span>' : ''}
+          </div>
+        `;
+      }
 
       return `
-        <div onclick="selectTransferOut(${p.element_id})" class="player-card cursor-pointer rounded-xl p-2 text-center w-[92px] shadow-lg ${borderClass}">
-          ${getJerseyIcon(p.team_short)}
-          <div class="text-[9px] font-bold text-emerald-400 uppercase tracking-wider mt-0.5">${p.team_short}</div>
-          <div class="text-[11px] font-bold text-gray-100 truncate mt-0.5 flex items-center justify-center gap-1">
-            ${p.web_name} ${capBadge}
+        <div onclick="selectTransferOut(${p.element_id})" 
+             class="player-card ${isSelected ? 'is-selected' : ''} ${isSimulated ? 'ring-2 ring-pink-500' : ''} cursor-pointer rounded-xl p-2 text-center w-[92px] sm:w-[104px] shadow-xl relative group select-none">
+          
+          <!-- Club & Captain Header -->
+          <div class="flex items-center justify-between gap-1 mb-1">
+            <div class="flex items-center gap-1 min-w-0">
+              <img src="${getClubBadgeUrl(p.team_code)}" class="w-3.5 h-3.5 object-contain flex-shrink-0" />
+              <span class="text-[8px] font-black px-1 py-0.2 rounded uppercase truncate" style="background:${teamBg}; color:#fff;">
+                ${p.team_short}
+              </span>
+            </div>
+            <div class="flex items-center gap-0.5 flex-shrink-0">
+              ${doubtFlag}
+              ${capBadge}
+            </div>
           </div>
-          <div class="text-[11px] font-mono font-black text-yellow-400 mt-1">${p.event_points} Pts</div>
-          <div class="text-[9px] text-gray-400 mt-0.5">£${(p.now_cost / 10).toFixed(1)}m</div>
+
+          <!-- Photo / Kit Visual Container -->
+          ${visualContent}
+
+          <!-- Web Name -->
+          <div class="text-[11px] sm:text-xs font-extrabold text-white truncate mt-0.5" title="${p.web_name}">
+            ${p.web_name}
+          </div>
+
+          <!-- Fixture Pill -->
+          <div class="my-0.5">
+            ${fdrBadge}
+          </div>
+
+          <!-- Pts & Cost -->
+          <div class="flex items-center justify-between pt-1 border-t border-white/10 text-[10px] font-mono">
+            <span class="font-extrabold text-pl-gold">${p.event_points} Pts</span>
+            <span class="text-slate-400">£${(p.now_cost / 10).toFixed(1)}m</span>
+          </div>
+
+          <!-- Hover Hint -->
+          <div class="hidden group-hover:block absolute -top-8 left-1/2 -translate-x-1/2 bg-[#070417] border border-pl-green text-pl-green text-[9px] font-bold px-2 py-0.5 rounded shadow-lg whitespace-nowrap z-30">
+            ${isSelected ? 'Pemain Terpilih' : 'Klik: Ganti Pemain'}
+          </div>
         </div>
       `;
     }
 
+    // Render Full Pitch & Bench
     function renderPitch() {
       if (!appData) return;
-      const starters = appData.picks.filter(p => p.position <= 11);
-      const bench = appData.picks.filter(p => p.position > 11);
+      const picks = appData.picks;
+      const starters = picks.filter(p => p.position <= 11);
+      const bench = picks.filter(p => p.position > 11);
 
-      document.getElementById('pitch-gk').innerHTML = starters.filter(p => p.element_type === 1).map(p => renderCard(p)).join('');
-      document.getElementById('pitch-def').innerHTML = starters.filter(p => p.element_type === 2).map(p => renderCard(p)).join('');
-      document.getElementById('pitch-mid').innerHTML = starters.filter(p => p.element_type === 3).map(p => renderCard(p)).join('');
-      document.getElementById('pitch-fwd').innerHTML = starters.filter(p => p.element_type === 4).map(p => renderCard(p)).join('');
-      document.getElementById('pitch-bench').innerHTML = bench.map(p => renderCard(p)).join('');
+      // Compute Dynamic Formation
+      const defCount = starters.filter(p => p.element_type === 2).length;
+      const midCount = starters.filter(p => p.element_type === 3).length;
+      const fwdCount = starters.filter(p => p.element_type === 4).length;
+      document.getElementById('pitch-formation-badge').innerText = `FORMASI ${defCount}-${midCount}-${fwdCount}`;
+
+      // Render Rows
+      document.getElementById('pitch-gk').innerHTML = starters.filter(p => p.element_type === 1).map(p => renderPlayerCard(p)).join('');
+      document.getElementById('pitch-def').innerHTML = starters.filter(p => p.element_type === 2).map(p => renderPlayerCard(p)).join('');
+      document.getElementById('pitch-mid').innerHTML = starters.filter(p => p.element_type === 3).map(p => renderPlayerCard(p)).join('');
+      document.getElementById('pitch-fwd').innerHTML = starters.filter(p => p.element_type === 4).map(p => renderPlayerCard(p)).join('');
+      
+      // Render Bench
+      document.getElementById('pitch-bench').innerHTML = bench.map((p, idx) => {
+        const benchLabel = (p.element_type === 1) ? 'GK Sub' : `Bench ${idx}`;
+        return `
+          <div class="relative">
+            <div class="text-[9px] font-extrabold text-slate-400 uppercase tracking-wider text-center mb-1">${benchLabel}</div>
+            ${renderPlayerCard(p, true)}
+          </div>
+        `;
+      }).join('');
+
+      // Captain Info
+      const cap = starters.find(p => p.is_captain) || starters[0];
+      if (cap) {
+        document.getElementById('pitch-captain-name').innerText = `${cap.web_name} (${cap.event_points * 2} pts)`;
+      }
+
+      // Starting Points
+      const totalStartersPts = starters.reduce((acc, p) => acc + (p.event_points * (p.is_captain ? 2 : 1)), 0);
+      document.getElementById('pitch-total-points').innerText = `${totalStartersPts} Pts`;
+
+      // Bench Points
+      const totalBenchPts = bench.reduce((acc, p) => acc + p.event_points, 0);
+      document.getElementById('bench-points-total').innerText = `${totalBenchPts} Pts di Cadangan`;
     }
 
-    async function selectTransferOut(elementId) {
+    // Select Player to Transfer Out
+    function selectTransferOut(elementId) {
       selectedPlayer = appData.picks.find(p => p.element_id === elementId);
+      if (!selectedPlayer) return;
+
       renderPitch();
 
       const bank = appData.entry.last_deadline_bank || 0;
       const totalBudget = selectedPlayer.now_cost + bank;
 
-      document.getElementById('planner-title').innerText = `Ganti: ${selectedPlayer.web_name} (£${(selectedPlayer.now_cost/10).toFixed(1)}m)`;
-      document.getElementById('budget-calc').innerText = `Budget: £${(totalBudget/10).toFixed(1)}m`;
-      document.getElementById('planner-instructions').classList.add('hidden');
-      document.getElementById('planner-controls').classList.remove('hidden');
-      document.getElementById('planner-recs').classList.remove('hidden');
+      // Update Planner Banner & Controls
+      document.getElementById('planner-header-title').innerText = `Ganti: ${selectedPlayer.web_name}`;
+      document.getElementById('planner-budget-display').innerText = `£${(totalBudget / 10).toFixed(1)}m`;
+
+      document.getElementById('outgoing-player-banner').classList.remove('hidden');
+      document.getElementById('outgoing-photo').src = getPlayerPhotoUrl(selectedPlayer.code);
+      document.getElementById('outgoing-club-badge').src = getClubBadgeUrl(selectedPlayer.team_code);
+      document.getElementById('outgoing-name').innerText = selectedPlayer.web_name;
+      document.getElementById('outgoing-meta').innerText = `£${(selectedPlayer.now_cost/10).toFixed(1)}m • Form: ${selectedPlayer.form} • Total: ${selectedPlayer.total_points} Pts`;
+
+      // Set position filter automatically to match
+      setPositionFilter(selectedPlayer.element_type);
+
+      // Set budget slider
+      const slider = document.getElementById('filter-budget-slider');
+      slider.value = totalBudget;
+      document.getElementById('budget-slider-val').innerText = `£${(totalBudget/10).toFixed(1)}m`;
 
       fetchTargets();
     }
 
-    async function fetchTargets() {
-      if (!selectedPlayer) return;
+    function deselectPlayer() {
+      selectedPlayer = null;
+      document.getElementById('outgoing-player-banner').classList.add('hidden');
+      document.getElementById('planner-header-title').innerText = 'Pilih Pemain di Lapangan';
       const bank = appData.entry.last_deadline_bank || 0;
-      const totalBudget = selectedPlayer.now_cost + bank;
+      document.getElementById('planner-budget-display').innerText = `£${(bank / 10).toFixed(1)}m`;
+      renderPitch();
+      fetchTargets();
+    }
+
+    function setPositionFilter(pos) {
+      activePosFilter = pos;
+      document.querySelectorAll('.pos-filter-btn').forEach(btn => {
+        if (parseInt(btn.getAttribute('data-pos')) === pos) {
+          btn.className = 'pos-filter-btn active px-3 py-1 rounded-lg text-xs font-bold bg-pl-green text-[#070417]';
+        } else {
+          btn.className = 'pos-filter-btn px-3 py-1 rounded-lg text-xs font-bold bg-white/5 text-slate-300 hover:bg-white/10';
+        }
+      });
+      fetchTargets();
+    }
+
+    function onBudgetSliderChange(val) {
+      document.getElementById('budget-slider-val').innerText = `£${(val / 10).toFixed(1)}m`;
+      fetchTargets();
+    }
+
+    let searchDebounceTimer = null;
+    function onSearchInput() {
+      clearTimeout(searchDebounceTimer);
+      searchDebounceTimer = setTimeout(() => {
+        fetchTargets();
+      }, 250);
+    }
+
+    // Fetch Recommended Transfer In Targets from Server API
+    async function fetchTargets() {
+      const bank = appData.entry.last_deadline_bank || 0;
+      const budgetSliderVal = parseInt(document.getElementById('filter-budget-slider').value) || 150;
       const teamFilter = document.getElementById('filter-team').value;
       const sortBy = document.getElementById('sort-by').value;
+      const searchQuery = document.getElementById('filter-search').value.trim();
+
+      const elType = activePosFilter;
+      const countEl = document.getElementById('recs-count');
+      countEl.innerText = 'Mencari...';
 
       try {
-        const res = await fetch(`/api/transfer-targets?type=${selectedPlayer.element_type}&max_cost=${totalBudget}&team=${teamFilter}&sort=${sortBy}`);
+        const url = `/api/transfer-targets?type=${elType}&max_cost=${budgetSliderVal}&team=${teamFilter}&sort=${sortBy}&q=${encodeURIComponent(searchQuery)}`;
+        const res = await fetch(url);
         const targets = await res.json();
+        cachedTargets = targets;
 
-        const filtered = targets.filter(t => t.id !== selectedPlayer.element_id);
-        document.getElementById('recs-count').innerText = `${filtered.length} opsi`;
+        // Exclude currently selected player
+        const filtered = targets.filter(t => !selectedPlayer || t.id !== selectedPlayer.element_id);
+        countEl.innerText = `${filtered.length} Opsi Tersedia`;
 
-        document.getElementById('recs-list').innerHTML = filtered.map(t => {
-          const fdrColor = t.next_fixture_fdr <= 2 ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/40' : 
-                           t.next_fixture_fdr === 3 ? 'bg-gray-800 text-gray-300 border-gray-700' : 'bg-rose-500/20 text-rose-400 border-rose-500/40';
+        const recsListEl = document.getElementById('recs-list');
+        if (filtered.length === 0) {
+          recsListEl.innerHTML = `
+            <div class="text-center py-8 text-slate-400 text-xs">
+              Tidak ada pemain yang cocok dengan filter / budget ini. Coba naikkan batas budget.
+            </div>
+          `;
+          return;
+        }
+
+        recsListEl.innerHTML = filtered.map(t => {
+          // Render 3 fixtures ticker
+          const fixturesHtml = (t.upcoming_fixtures || []).slice(0, 3).map(f => {
+            return `
+              <span class="text-[8px] font-mono px-1 py-0.2 rounded ${getFdrClass(f.fdr)}">
+                GW${f.gw}: ${f.opp}(${f.is_home ? 'H' : 'A'})
+              </span>
+            `;
+          }).join(' ');
+
+          const formNumber = parseFloat(t.form) || 0;
+          const formColor = formNumber >= 6.0 ? 'text-pl-green font-black' : formNumber >= 4.0 ? 'text-amber-300 font-bold' : 'text-slate-300';
 
           return `
-            <div class="py-2.5 flex items-center justify-between hover:bg-gray-800/60 px-2 rounded-lg cursor-pointer transition" onclick="simulateSwap(${t.id})">
-              <div>
-                <div class="flex items-center gap-1.5">
-                  <span class="font-bold text-gray-100 text-xs">${t.web_name}</span>
-                  <span class="text-[9px] text-gray-400 uppercase font-semibold">${t.team_name}</span>
-                  <span class="text-[9px] font-mono px-1.5 py-0.2 rounded border ${fdrColor}">
-                    ${t.next_fixture_opp} FDR ${t.next_fixture_fdr}
-                  </span>
+            <div class="p-2.5 rounded-xl bg-white/[0.03] hover:bg-white/[0.08] border border-white/5 hover:border-pl-green/40 transition flex items-center justify-between gap-3 group">
+              <!-- Left: Photo + Name + Fixtures -->
+              <div class="flex items-center gap-2.5 min-w-0">
+                <div class="relative w-11 h-11 rounded-full bg-slate-900 border border-white/10 flex-shrink-0">
+                  <img src="${getPlayerPhotoUrl(t.code)}" 
+                       onerror="this.onerror=null; this.src='${getClubKitUrl(t.team_code, t.element_type)}'" 
+                       class="w-full h-full object-contain rounded-full" />
+                  <img src="${getClubBadgeUrl(t.team_code)}" 
+                       title="${t.team_name}" 
+                       class="absolute -bottom-1 -right-1 w-4 h-4 object-contain rounded-full bg-[#070417] p-[1px] border border-white/20" />
                 </div>
-                <div class="text-[10px] text-gray-400 mt-0.5">Form: ${t.form} • Total: ${t.total_points} pts</div>
+                <div class="min-w-0">
+                  <div class="flex items-center gap-1.5 flex-wrap">
+                    <span class="font-extrabold text-white text-xs truncate">${t.web_name}</span>
+                    <span class="text-[9px] font-bold px-1.5 py-0.5 rounded bg-white/10 text-slate-200 uppercase flex items-center gap-1">
+                      <img src="${getClubBadgeUrl(t.team_code)}" class="w-3 h-3 object-contain inline-block" />
+                      ${t.team_name}
+                    </span>
+                    <span class="text-[9px] font-semibold text-slate-400">${t.position_label}</span>
+                  </div>
+                  <!-- Fixture Ticker -->
+                  <div class="flex items-center gap-1 mt-1 flex-wrap">
+                    ${fixturesHtml}
+                  </div>
+                  <div class="text-[10px] text-slate-400 mt-0.5">
+                    Form: <span class="${formColor}">${t.form}</span> • Total: <strong>${t.total_points}</strong> pts • xP: <span class="text-cyan-300 font-mono">${t.ep_next}</span>
+                  </div>
+                </div>
               </div>
-              <div class="text-right">
-                <div class="font-mono font-bold text-emerald-400">£${(t.now_cost / 10).toFixed(1)}m</div>
-                <button class="mt-0.5 px-2 py-0.5 rounded text-[10px] bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 hover:bg-emerald-500 hover:text-black font-bold">
-                  Pilih
-                </button>
+
+              <!-- Right: Cost & Actions -->
+              <div class="text-right flex-shrink-0">
+                <div class="font-mono font-black text-pl-gold text-xs sm:text-sm">£${(t.now_cost / 10).toFixed(1)}m</div>
+                <div class="flex items-center gap-1 mt-1.5">
+                  <button onclick="openCompareModal(${t.id})" title="Bandingkan Head-to-Head" class="px-2 py-1 rounded text-[10px] bg-white/5 hover:bg-cyan-500/20 text-cyan-300 border border-white/10 hover:border-cyan-500/40 font-bold transition">
+                    ⚔️ Compare
+                  </button>
+                  <button onclick="previewSwap(${t.id})" title="Simulasi Swap" class="px-2.5 py-1 rounded text-[10px] bg-pl-green/15 hover:bg-pl-green text-pl-green hover:text-[#070417] border border-pl-green/40 font-extrabold transition">
+                    ⚡ Swap
+                  </button>
+                </div>
               </div>
             </div>
           `;
@@ -303,42 +1567,783 @@ HTML_PAGE = """<!DOCTYPE html>
 
       } catch (err) {
         console.error(err);
+        countEl.innerText = 'Error memuat';
       }
     }
 
-    function simulateSwap(targetId) {
-      const bank = appData.entry.last_deadline_bank || 0;
-      fetch(`/api/transfer-targets?type=${selectedPlayer.element_type}&max_cost=2000`)
-        .then(r => r.json())
-        .then(targets => {
-          const target = targets.find(t => t.id === targetId);
-          if (!target) return;
-          const remainingBank = bank + selectedPlayer.now_cost - target.now_cost;
-          const formDiff = (parseFloat(target.form) - parseFloat(selectedPlayer.form || 0)).toFixed(1);
+    // Preview Swap & Calculate Impact
+    function previewSwap(targetId) {
+      if (!selectedPlayer) {
+        alert('Silakan pilih pemain di lapangan terlebih dahulu sebelum melakukan simulasi swap.');
+        return;
+      }
+      const target = cachedTargets.find(t => t.id === targetId);
+      if (!target) return;
+      simulationTarget = target;
 
-          document.getElementById('impact-preview').innerHTML = `
-            <div class="bg-gray-950 p-3 rounded-xl border border-gray-800 space-y-2">
-              <div class="flex justify-between font-bold text-xs text-gray-200">
-                <span>OUT: <span class="text-rose-400">${selectedPlayer.web_name}</span></span>
-                <span>IN: <span class="text-emerald-400">${target.web_name}</span></span>
+      const bank = appData.entry.last_deadline_bank || 0;
+      const remainingBank = bank + selectedPlayer.now_cost - target.now_cost;
+      const formDiff = (parseFloat(target.form) - parseFloat(selectedPlayer.form || 0)).toFixed(1);
+      const pointsDiff = target.total_points - selectedPlayer.total_points;
+      
+      const impactContainer = document.getElementById('impact-preview-content');
+      impactContainer.innerHTML = `
+        <div class="p-3.5 rounded-xl bg-[#09051d] border border-pl-green/30 space-y-3">
+          
+          <!-- Out vs In Title Bar -->
+          <div class="flex items-center justify-between pb-2 border-b border-white/10 text-xs">
+            <div class="flex items-center gap-2">
+              <span class="text-rose-400 font-extrabold uppercase text-[10px]">OUT:</span>
+              <span class="font-bold text-slate-200">${selectedPlayer.web_name}</span>
+              <span class="text-slate-400 font-mono text-[10px]">£${(selectedPlayer.now_cost/10).toFixed(1)}m</span>
+            </div>
+            <span class="text-pl-green text-base">➔</span>
+            <div class="flex items-center gap-2">
+              <span class="text-pl-green font-extrabold uppercase text-[10px]">IN:</span>
+              <span class="font-bold text-white">${target.web_name}</span>
+              <span class="text-pl-gold font-mono text-[10px]">£${(target.now_cost/10).toFixed(1)}m</span>
+            </div>
+          </div>
+
+          <!-- Impact Metrics Grid -->
+          <div class="grid grid-cols-3 gap-2 text-center">
+            <div class="p-2 rounded-lg bg-white/5 border border-white/5">
+              <span class="text-[9px] uppercase font-bold text-slate-400 block">Sisa Saldo Bank</span>
+              <span class="text-xs sm:text-sm font-mono font-black ${remainingBank >= 0 ? 'text-pl-green' : 'text-rose-400'}">
+                £${(remainingBank / 10).toFixed(1)}m
+              </span>
+              <div class="text-[8px] text-slate-400">${remainingBank >= 0 ? 'Budget Aman' : 'Budget Minus!'}</div>
+            </div>
+
+            <div class="p-2 rounded-lg bg-white/5 border border-white/5">
+              <span class="text-[9px] uppercase font-bold text-slate-400 block">Delta Form</span>
+              <span class="text-xs sm:text-sm font-mono font-black ${formDiff >= 0 ? 'text-pl-green' : 'text-rose-400'}">
+                ${formDiff >= 0 ? '+' + formDiff : formDiff}
+              </span>
+              <div class="text-[8px] text-slate-400">pts/match</div>
+            </div>
+
+            <div class="p-2 rounded-lg bg-white/5 border border-white/5">
+              <span class="text-[9px] uppercase font-bold text-slate-400 block">Delta Poin</span>
+              <span class="text-xs sm:text-sm font-mono font-black ${pointsDiff >= 0 ? 'text-pl-green' : 'text-rose-400'}">
+                ${pointsDiff >= 0 ? '+' + pointsDiff : pointsDiff}
+              </span>
+              <div class="text-[8px] text-slate-400">total poin</div>
+            </div>
+          </div>
+
+          <!-- Upcoming Fixtures Comparison -->
+          <div class="text-[11px] p-2 rounded-lg bg-white/[0.02] border border-white/5 space-y-1">
+            <div class="flex justify-between text-slate-300">
+              <span class="text-slate-400">Jadwal 3 GW ${target.web_name}:</span>
+              <span class="font-mono">
+                ${(target.upcoming_fixtures || []).map(f => `<span class="px-1 rounded ${getFdrClass(f.fdr)} text-[9px]">${f.opp}</span>`).join(' ')}
+              </span>
+            </div>
+          </div>
+
+          <!-- Action Buttons -->
+          <div class="flex items-center gap-2 pt-1">
+            <button onclick="applySimulationToPitch()" class="flex-1 py-2 rounded-xl bg-pl-green text-[#070417] font-black text-xs hover:bg-emerald-400 transition shadow-lg shadow-pl-green/20">
+              Terapkan ke Formasi Pitch
+            </button>
+            <button onclick="openCompareModal(${target.id})" class="px-3 py-2 rounded-xl bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 font-bold text-xs hover:bg-cyan-500/30 transition">
+              Detail H2H
+            </button>
+          </div>
+
+        </div>
+      `;
+    }
+
+    // Apply Simulated Swap to Lineup
+    function applySimulationToPitch() {
+      if (!selectedPlayer || !simulationTarget) return;
+
+      const pickIndex = appData.picks.findIndex(p => p.element_id === selectedPlayer.element_id);
+      if (pickIndex === -1) return;
+
+      // Replace pick with simulation data
+      const target = simulationTarget;
+      appData.picks[pickIndex] = {
+        ...appData.picks[pickIndex],
+        element_id: target.id,
+        web_name: target.web_name,
+        code: target.code,
+        team_code: target.team_code,
+        team_short: target.team_name,
+        now_cost: target.now_cost,
+        event_points: 0,
+        total_points: target.total_points,
+        form: target.form,
+        upcoming_fixtures: target.upcoming_fixtures,
+        is_simulated: true
+      };
+
+      // Update Bank Saldo
+      const bank = appData.entry.last_deadline_bank || 0;
+      appData.entry.last_deadline_bank = bank + selectedPlayer.now_cost - target.now_cost;
+      document.getElementById('stat-bank-balance').innerText = `£${(appData.entry.last_deadline_bank / 10).toFixed(1)}m`;
+
+      // Show Simulation Banner
+      document.getElementById('sim-status-banner').classList.remove('hidden');
+      document.getElementById('sim-status-banner').classList.add('flex');
+      document.getElementById('sim-transfers-count').innerText = '1';
+
+      selectedPlayer = null;
+      simulationTarget = null;
+      document.getElementById('outgoing-player-banner').classList.add('hidden');
+      document.getElementById('planner-header-title').innerText = 'Simulasi Terpasang!';
+      
+      renderPitch();
+      fetchTargets();
+    }
+
+    // Reset Simulation back to Official Live Lineup
+    function resetSimulation() {
+      loadData();
+      document.getElementById('sim-status-banner').classList.add('hidden');
+      document.getElementById('sim-status-banner').classList.remove('flex');
+      document.getElementById('impact-preview-content').innerHTML = `
+        <div class="text-center py-6 text-slate-400 text-xs">
+          <p>👈 Pilih pemain keluar di formasi lapangan, lalu klik <strong class="text-pl-green">Preview Swap</strong> pada kandidat pemain masuk.</p>
+        </div>
+      `;
+    }
+
+    // Open Head-to-Head Compare Modal
+    function openCompareModal(targetId) {
+      const p2 = cachedTargets.find(t => t.id === targetId);
+      if (!p2) return;
+
+      const p1 = selectedPlayer || appData.picks[0];
+      const p1Form = parseFloat(p1.form) || 0;
+      const p2Form = parseFloat(p2.form) || 0;
+
+      const p1Xp = parseFloat(p1.ep_next) || 0;
+      const p2Xp = parseFloat(p2.ep_next) || 0;
+
+      const modalContent = document.getElementById('compare-modal-content');
+      modalContent.innerHTML = `
+        <div class="space-y-4">
+          
+          <!-- Dual Cards Header -->
+          <div class="grid grid-cols-2 gap-4">
+            
+            <!-- Player 1 Card -->
+            <div class="p-4 rounded-xl bg-white/5 border border-white/10 text-center relative">
+              <div class="flex items-center justify-between mb-2">
+                <span class="flex items-center gap-1 text-[9px] font-bold px-2 py-0.5 rounded bg-white/10 text-slate-200 uppercase">
+                  <img src="${getClubBadgeUrl(p1.team_code)}" class="w-3.5 h-3.5 object-contain" />
+                  ${p1.team_short}
+                </span>
+                <span class="text-[9px] text-slate-400 font-bold uppercase">OUT</span>
               </div>
-              <div class="text-[11px] text-gray-300 flex justify-between pt-1 border-t border-gray-800/80">
-                <span>Sisa Budget Bank:</span>
-                <span class="font-mono font-bold ${remainingBank >= 0 ? 'text-emerald-400' : 'text-rose-400'}">£${(remainingBank/10).toFixed(1)}m</span>
+              <div class="relative w-20 h-20 mx-auto mb-1">
+                <img src="${getPlayerPhotoUrl(p1.code)}" onerror="this.onerror=null; this.src='${getClubKitUrl(p1.team_code, p1.element_type)}'" class="w-full h-full object-contain" />
+                <img src="${getClubKitUrl(p1.team_code, p1.element_type)}" title="Jersey Resmi Klub" class="absolute -bottom-1 -right-1 w-7 h-7 object-contain drop-shadow" />
               </div>
-              <div class="text-[11px] text-gray-300 flex justify-between">
-                <span>Perubahan Form (Performa):</span>
-                <span class="font-mono font-bold ${formDiff >= 0 ? 'text-emerald-400' : 'text-rose-400'}">${formDiff >= 0 ? '+' + formDiff : formDiff} pts/match</span>
+              <div class="text-sm font-black text-white">${p1.web_name}</div>
+              <div class="text-xs font-mono font-bold text-pl-gold mt-0.5">£${(p1.now_cost/10).toFixed(1)}m</div>
+            </div>
+
+            <!-- Player 2 Card -->
+            <div class="p-4 rounded-xl bg-pl-green/10 border border-pl-green/30 text-center relative">
+              <div class="flex items-center justify-between mb-2">
+                <span class="flex items-center gap-1 text-[9px] font-bold px-2 py-0.5 rounded bg-pl-green/20 text-pl-green uppercase">
+                  <img src="${getClubBadgeUrl(p2.team_code)}" class="w-3.5 h-3.5 object-contain" />
+                  ${p2.team_name}
+                </span>
+                <span class="text-[9px] text-pl-green font-extrabold uppercase">IN</span>
               </div>
-              <div class="text-[11px] text-gray-300 flex justify-between">
-                <span>Lawan Berikutnya:</span>
-                <span class="font-mono font-bold text-emerald-300">${target.next_fixture_opp} (FDR ${target.next_fixture_fdr})</span>
+              <div class="relative w-20 h-20 mx-auto mb-1">
+                <img src="${getPlayerPhotoUrl(p2.code)}" onerror="this.onerror=null; this.src='${getClubKitUrl(p2.team_code, p2.element_type)}'" class="w-full h-full object-contain" />
+                <img src="${getClubKitUrl(p2.team_code, p2.element_type)}" title="Jersey Resmi Klub" class="absolute -bottom-1 -right-1 w-7 h-7 object-contain drop-shadow" />
+              </div>
+              <div class="text-sm font-black text-white">${p2.web_name}</div>
+              <div class="text-xs font-mono font-bold text-pl-gold mt-0.5">£${(p2.now_cost/10).toFixed(1)}m</div>
+            </div>
+
+          </div>
+
+          <!-- Stat Comparison Table -->
+          <div class="space-y-2 text-xs">
+            
+            <!-- Metric 1: Form -->
+            <div class="p-2.5 rounded-xl bg-white/[0.02] border border-white/5">
+              <div class="flex justify-between items-center mb-1 text-[11px]">
+                <span class="font-mono font-bold ${p1Form >= p2Form ? 'text-pl-green' : 'text-slate-400'}">${p1.form}</span>
+                <span class="text-slate-400 uppercase font-bold text-[10px]">Recent Form</span>
+                <span class="font-mono font-bold ${p2Form >= p1Form ? 'text-pl-green' : 'text-slate-400'}">${p2.form}</span>
+              </div>
+              <div class="h-2 rounded-full bg-white/10 flex overflow-hidden">
+                <div class="bg-purple-500 h-full transition-all" style="width: ${Math.max(10, Math.min(90, (p1Form / (p1Form + p2Form + 0.01)) * 100))}%"></div>
+                <div class="bg-pl-green h-full transition-all" style="width: ${Math.max(10, Math.min(90, (p2Form / (p1Form + p2Form + 0.01)) * 100))}%"></div>
+              </div>
+            </div>
+
+            <!-- Metric 2: Total Points -->
+            <div class="p-2.5 rounded-xl bg-white/[0.02] border border-white/5">
+              <div class="flex justify-between items-center mb-1 text-[11px]">
+                <span class="font-mono font-bold ${p1.total_points >= p2.total_points ? 'text-pl-green' : 'text-slate-400'}">${p1.total_points} pts</span>
+                <span class="text-slate-400 uppercase font-bold text-[10px]">Total Poin Musim Ini</span>
+                <span class="font-mono font-bold ${p2.total_points >= p1.total_points ? 'text-pl-green' : 'text-slate-400'}">${p2.total_points} pts</span>
+              </div>
+              <div class="h-2 rounded-full bg-white/10 flex overflow-hidden">
+                <div class="bg-purple-500 h-full transition-all" style="width: ${Math.max(10, Math.min(90, (p1.total_points / (p1.total_points + p2.total_points + 0.01)) * 100))}%"></div>
+                <div class="bg-pl-green h-full transition-all" style="width: ${Math.max(10, Math.min(90, (p2.total_points / (p1.total_points + p2.total_points + 0.01)) * 100))}%"></div>
+              </div>
+            </div>
+
+            <!-- Metric 3: Expected Points Next Round (xP) -->
+            <div class="p-2.5 rounded-xl bg-white/[0.02] border border-white/5">
+              <div class="flex justify-between items-center mb-1 text-[11px]">
+                <span class="font-mono font-bold ${p1Xp >= p2Xp ? 'text-pl-green' : 'text-slate-400'}">${p1.ep_next || '0.0'}</span>
+                <span class="text-slate-400 uppercase font-bold text-[10px]">Expected Points (xP) GW Selanjutnya</span>
+                <span class="font-mono font-bold ${p2Xp >= p1Xp ? 'text-pl-green' : 'text-slate-400'}">${p2.ep_next || '0.0'}</span>
+              </div>
+            </div>
+
+            <!-- Metric 4: Ownership -->
+            <div class="p-2.5 rounded-xl bg-white/[0.02] border border-white/5">
+              <div class="flex justify-between items-center text-[11px]">
+                <span class="font-mono font-bold text-slate-300">${p1.selected_by_percent || '0.0'}%</span>
+                <span class="text-slate-400 uppercase font-bold text-[10px]">Kepemilikan Global (TSB%)</span>
+                <span class="font-mono font-bold text-slate-300">${p2.selected_by_percent || '0.0'}%</span>
+              </div>
+            </div>
+
+          </div>
+
+          <!-- Bottom Action -->
+          <div class="pt-2 flex items-center justify-end gap-2">
+            <button onclick="closeCompareModal()" class="px-4 py-2 rounded-xl bg-white/10 hover:bg-white/20 text-xs font-semibold text-white transition">
+              Tutup
+            </button>
+            <button onclick="closeCompareModal(); previewSwap(${p2.id});" class="px-4 py-2 rounded-xl bg-pl-green text-[#070417] text-xs font-extrabold hover:bg-emerald-400 transition shadow-lg shadow-pl-green/20">
+              Pilih Untuk Swap
+            </button>
+          </div>
+
+        </div>
+      `;
+
+      document.getElementById('compare-modal').classList.remove('hidden');
+    }
+
+    function closeCompareModal() {
+      document.getElementById('compare-modal').classList.add('hidden');
+    }
+
+    // Populate Manager Insights & League Tables
+    function renderInsights() {
+      if (!appData) return;
+
+      // 1. Chips Status
+      const chips = (appData.history && appData.history.chips) ? appData.history.chips : [];
+      const chip3xc = chips.find(c => c.name === '3xc');
+      if (chip3xc) {
+        document.getElementById('chip-status-3xc').innerText = `Used (GW${chip3xc.event})`;
+        document.getElementById('chip-status-3xc').className = 'text-[10px] px-2 py-0.5 rounded-full font-bold bg-white/10 text-slate-400 border border-white/10';
+      }
+
+      // 2. Gameweek History
+      const currentList = (appData.history && appData.history.current) ? appData.history.current : [];
+      const historyTable = document.getElementById('gw-history-table');
+      historyTable.innerHTML = currentList.map(h => {
+        return `
+          <tr class="hover:bg-white/5 transition">
+            <td class="py-2 px-3 font-bold text-white">Gameweek ${h.event}</td>
+            <td class="py-2 px-3 text-pl-green font-bold">${h.points}</td>
+            <td class="py-2 px-3 font-semibold text-slate-200">${h.total_points}</td>
+            <td class="py-2 px-3 text-slate-300">#${h.rank.toLocaleString()}</td>
+            <td class="py-2 px-3 text-white">#${h.overall_rank.toLocaleString()}</td>
+            <td class="py-2 px-3 text-slate-400">${h.event_transfers} (${h.event_transfers_cost > 0 ? '-' + h.event_transfers_cost : '0'})</td>
+            <td class="py-2 px-3 text-slate-400">${h.points_on_bench}</td>
+          </tr>
+        `;
+      }).join('');
+
+      // 3. Classic Mini-Leagues
+      const leagues = appData.leagues || [];
+      const leaguesList = document.getElementById('mini-leagues-list');
+      if (leagues.length === 0) {
+        leaguesList.innerHTML = '<div class="text-xs text-slate-400 py-4 text-center">Tidak ada data liga.</div>';
+        return;
+      }
+
+      leaguesList.innerHTML = leagues.map(l => {
+        const movement = (l.entry_last_rank && l.entry_rank) ? (l.entry_last_rank - l.entry_rank) : 0;
+        const moveIcon = movement > 0 ? `<span class="text-pl-green font-bold">▲ ${movement}</span>` : 
+                         movement < 0 ? `<span class="text-rose-400 font-bold">▼ ${Math.abs(movement)}</span>` : 
+                         `<span class="text-slate-400">─</span>`;
+
+        return `
+          <div class="p-3 rounded-xl bg-white/[0.02] hover:bg-white/[0.06] border border-white/5 flex items-center justify-between gap-3 transition">
+            <div class="min-w-0">
+              <div class="text-xs font-bold text-white truncate">${l.name}</div>
+              <div class="text-[10px] text-slate-400 mt-0.5">Rank Pekan Lalu: #${(l.entry_last_rank || 0).toLocaleString()}</div>
+            </div>
+            <div class="text-right flex-shrink-0">
+              <div class="font-mono font-black text-sm text-pl-gold">#${(l.entry_rank || 0).toLocaleString()}</div>
+              <div class="text-[10px] font-mono">${moveIcon}</div>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    let currentMarketTrends = null;
+    let activeMarketTab = 'squad';
+
+    // FEATURE 1: MARKET TRENDS & PRICE ALERT
+    function renderMarketTrends(marketTrends) {
+      currentMarketTrends = marketTrends;
+      if (!marketTrends) return;
+      const squadAlerts = marketTrends.squad_alerts || [];
+      const fallCount = squadAlerts.filter(a => a.trend === 'fall').length;
+      const riseCount = squadAlerts.filter(a => a.trend === 'rise').length;
+
+      const summaryEl = document.getElementById('market-alert-summary');
+      const countBadge = document.getElementById('mkt-squad-count');
+      if (countBadge) countBadge.innerText = squadAlerts.length;
+
+      if (summaryEl) {
+        if (squadAlerts.length === 0) {
+          summaryEl.innerHTML = `<span class="text-emerald-400 font-bold">Harga skuad stabil.</span> Tidak ada ancaman penurunan harga signifikan pekan ini.`;
+        } else {
+          summaryEl.innerHTML = `
+            <span class="text-rose-400 font-bold">⚠️ ${fallCount} Terancam Turun</span> &nbsp;•&nbsp; 
+            <span class="text-emerald-400 font-bold">📈 ${riseCount} Potensi Naik</span>
+          `;
+        }
+      }
+    }
+
+    function openMarketModal() {
+      const modal = document.getElementById('market-modal');
+      if (!modal) return;
+      modal.classList.remove('hidden');
+      switchMarketTab(activeMarketTab || 'squad');
+    }
+
+    function closeMarketModal() {
+      const modal = document.getElementById('market-modal');
+      if (modal) modal.classList.add('hidden');
+    }
+
+    function switchMarketTab(tab) {
+      activeMarketTab = tab;
+      ['squad', 'top_in', 'top_out'].forEach(t => {
+        const btn = document.getElementById(`mkt-tab-${t}`);
+        if (btn) {
+          if (t === tab) {
+            btn.className = 'px-3.5 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 bg-pl-green text-[#070417] shadow-sm cursor-pointer';
+          } else {
+            btn.className = 'px-3.5 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 bg-white/5 hover:bg-white/10 text-slate-300 border border-white/5 cursor-pointer';
+          }
+        }
+      });
+
+      const body = document.getElementById('market-modal-body');
+      if (!body || !currentMarketTrends) return;
+
+      if (tab === 'squad') {
+        const alerts = currentMarketTrends.squad_alerts || [];
+        if (alerts.length === 0) {
+          body.innerHTML = `
+            <div class="p-8 text-center bg-white/[0.02] rounded-2xl border border-white/5">
+              <span class="text-3xl block mb-2">🛡️</span>
+              <div class="text-sm font-bold text-white">Skuad Aman dari Tekanan Pasar</div>
+              <p class="text-xs text-slate-400 mt-1">Tidak ada pemain di tim Anda yang mengalami aksi jual atau beli ekstrem pekan ini.</p>
+            </div>
+          `;
+          return;
+        }
+
+        body.innerHTML = alerts.map(a => {
+          const isFall = a.trend === 'fall';
+          const cardBorder = isFall ? 'border-rose-500/40 bg-gradient-to-r from-rose-950/30 to-[#070417]' : 'border-emerald-500/40 bg-gradient-to-r from-emerald-950/30 to-[#070417]';
+          const badgeClass = isFall ? 'bg-rose-500/20 text-rose-300 border-rose-500/40' : 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40';
+          const netFormatted = (a.net_transfers > 0 ? '+' : '') + (a.net_transfers / 1000).toFixed(1) + 'k';
+
+          return `
+            <div class="p-3.5 rounded-2xl border ${cardBorder} flex flex-wrap items-center justify-between gap-3 shadow-lg">
+              <div class="flex items-center gap-3">
+                <div class="relative flex-shrink-0">
+                  <img src="${getPlayerPhotoUrl(a.code)}" onerror="this.src='${getClubBadgeUrl(a.code)}'" class="w-12 h-12 rounded-full border border-white/20 bg-slate-900 object-contain" />
+                  <span class="absolute -bottom-1 -right-1 text-[9px] font-black px-1 rounded bg-[#070417] border border-white/20 text-white">${a.team_short}</span>
+                </div>
+                <div>
+                  <div class="flex items-center gap-2">
+                    <span class="px-2 py-0.5 rounded text-[9px] font-extrabold uppercase tracking-wider border ${badgeClass}">
+                      ${isFall ? '🔴 Risiko Turun Harga (-£0.1m)' : '🟢 Potensi Naik Harga (+£0.1m)'}
+                    </span>
+                    ${a.news ? `<span class="text-[9px] text-amber-300 bg-amber-500/10 px-1.5 py-0.5 rounded border border-amber-500/30">⚠️ ${a.news}</span>` : ''}
+                  </div>
+                  <h4 class="text-sm font-bold text-white mt-1">${a.web_name}</h4>
+                  <div class="text-[11px] text-slate-300 font-mono mt-0.5">
+                    Harga: £${(a.now_cost / 10).toFixed(1)}m • Form: ${a.form} • Net Transfers: <strong class="${isFall ? 'text-rose-400' : 'text-emerald-400'}">${netFormatted}</strong>
+                  </div>
+                </div>
+              </div>
+              <div class="flex items-center gap-2">
+                ${isFall ? `
+                  <button onclick="closeMarketModal(); selectTransferOut(${a.id}); switchTab('planner');" class="px-3 py-1.5 rounded-xl bg-rose-500/20 hover:bg-rose-500/30 text-rose-300 border border-rose-500/40 text-xs font-bold transition cursor-pointer">
+                    Cari Pengganti (Transfer Lab) 🔄
+                  </button>
+                ` : `
+                  <span class="px-3 py-1.5 rounded-xl bg-emerald-500/15 text-emerald-400 text-xs font-bold border border-emerald-500/30">
+                    Pertahankan (Aset Naik) ✨
+                  </span>
+                `}
               </div>
             </div>
           `;
-        });
+        }).join('');
+
+      } else if (tab === 'top_in') {
+        const topIn = currentMarketTrends.top_in || [];
+        body.innerHTML = `
+          <div class="mb-2 text-xs text-slate-400">Pemain paling banyak ditransfer masuk oleh jutaan manajer FPL dunia pekan ini:</div>
+          <div class="space-y-2">
+            ${topIn.map((p, idx) => {
+              const netFormatted = '+' + (p.transfers_in_event / 1000).toFixed(1) + 'k';
+              return `
+                <div class="p-3 rounded-2xl bg-white/[0.03] hover:bg-white/[0.06] border border-white/10 flex items-center justify-between gap-3 transition">
+                  <div class="flex items-center gap-3">
+                    <span class="w-6 h-6 rounded-full bg-emerald-500/20 text-emerald-400 font-mono font-black text-xs flex items-center justify-center flex-shrink-0">
+                      ${idx + 1}
+                    </span>
+                    <img src="${getPlayerPhotoUrl(p.code)}" class="w-10 h-10 rounded-full border border-white/10 bg-slate-900 object-contain flex-shrink-0" />
+                    <div>
+                      <div class="flex items-center gap-1.5">
+                        <span class="text-xs font-bold text-white">${p.web_name}</span>
+                        <span class="text-[9px] font-bold text-slate-400 bg-white/5 px-1 rounded">${p.team_short}</span>
+                      </div>
+                      <div class="text-[10px] text-slate-400 font-mono">
+                        £${(p.now_cost / 10).toFixed(1)}m • Form: <span class="text-emerald-400 font-bold">${p.form}</span> • Dimiliki: ${p.selected_by_percent}%
+                      </div>
+                    </div>
+                  </div>
+                  <div class="text-right flex items-center gap-2.5">
+                    <div>
+                      <div class="text-xs font-mono font-black text-emerald-400">${netFormatted} IN</div>
+                      <div class="text-[9px] text-slate-400">Pekan Ini</div>
+                    </div>
+                    <button onclick="closeMarketModal(); inspectTargetInLab(${p.id}, '${p.web_name}', ${p.element_type});" class="px-2.5 py-1 rounded-lg bg-white/10 hover:bg-white/20 text-xs font-bold text-white transition cursor-pointer">
+                      Lihat di Lab 🔍
+                    </button>
+                  </div>
+                </div>
+              `;
+            }).join('')}
+          </div>
+        `;
+      } else if (tab === 'top_out') {
+        const topOut = currentMarketTrends.top_out || [];
+        body.innerHTML = `
+          <div class="mb-2 text-xs text-slate-400">Pemain paling banyak dilepas (dijual) oleh manajer dunia pekan ini:</div>
+          <div class="space-y-2">
+            ${topOut.map((p, idx) => {
+              const outFormatted = '-' + (p.transfers_out_event / 1000).toFixed(1) + 'k';
+              return `
+                <div class="p-3 rounded-2xl bg-white/[0.03] hover:bg-white/[0.06] border border-white/10 flex items-center justify-between gap-3 transition">
+                  <div class="flex items-center gap-3">
+                    <span class="w-6 h-6 rounded-full bg-rose-500/20 text-rose-400 font-mono font-black text-xs flex items-center justify-center flex-shrink-0">
+                      ${idx + 1}
+                    </span>
+                    <img src="${getPlayerPhotoUrl(p.code)}" class="w-10 h-10 rounded-full border border-white/10 bg-slate-900 object-contain flex-shrink-0" />
+                    <div>
+                      <div class="flex items-center gap-1.5">
+                        <span class="text-xs font-bold text-white">${p.web_name}</span>
+                        <span class="text-[9px] font-bold text-slate-400 bg-white/5 px-1 rounded">${p.team_short}</span>
+                      </div>
+                      <div class="text-[10px] text-slate-400 font-mono">
+                        £${(p.now_cost / 10).toFixed(1)}m • Form: ${p.form} • Dimiliki: ${p.selected_by_percent}%
+                      </div>
+                    </div>
+                  </div>
+                  <div class="text-right">
+                    <div class="text-xs font-mono font-black text-rose-400">${outFormatted} OUT</div>
+                    <div class="text-[9px] text-slate-400">Tekanan Jual</div>
+                  </div>
+                </div>
+              `;
+            }).join('')}
+          </div>
+        `;
+      }
     }
 
+    function inspectTargetInLab(id, name, elType) {
+      setPositionFilter(elType);
+      const searchInput = document.getElementById('filter-search');
+      if (searchInput) {
+        searchInput.value = name;
+        onSearchInput();
+      }
+      switchTab('planner');
+    }
+
+    // FEATURE 2: DEADLINE COUNTDOWN TIMER
+    let deadlineTimerInterval = null;
+
+    function startDeadlineCountdown(deadlineIso, eventName) {
+      if (deadlineTimerInterval) clearInterval(deadlineTimerInterval);
+      if (!deadlineIso) return;
+
+      const targetTime = new Date(deadlineIso).getTime();
+
+      function update() {
+        const now = Date.now();
+        const diff = targetTime - now;
+        const badgeEl = document.getElementById('badge-deadline');
+        const timerEl = document.getElementById('deadline-timer');
+        const labelEl = document.getElementById('deadline-label');
+        const subtitleEl = document.getElementById('stat-deadline-subtitle');
+
+        if (!timerEl) return;
+        if (labelEl) labelEl.innerText = `${eventName || 'GW6'} Deadline:`;
+
+        const deadlineDate = new Date(targetTime);
+        const dateStr = deadlineDate.toLocaleDateString('id-ID', { weekday: 'short', day: 'numeric', month: 'short' });
+        const timeStr = deadlineDate.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
+        if (subtitleEl) subtitleEl.innerText = `${dateStr}, ${timeStr} WIB`;
+
+        if (diff <= 0) {
+          timerEl.innerText = 'TERLEWAT';
+          if (badgeEl) badgeEl.className = 'inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] sm:text-[11px] font-bold bg-slate-700 text-slate-300 border border-slate-600';
+          return;
+        }
+
+        const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+        const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+        const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+        const seconds = Math.floor((diff % (1000 * 60)) / 1000);
+
+        if (days > 0) {
+          timerEl.innerText = `${days}h ${String(hours).padStart(2, '0')}j ${String(minutes).padStart(2, '0')}m ${String(seconds).padStart(2, '0')}s`;
+        } else {
+          timerEl.innerText = `${String(hours).padStart(2, '0')}j ${String(minutes).padStart(2, '0')}m ${String(seconds).padStart(2, '0')}s`;
+        }
+
+        if (days === 0 && hours < 2) {
+          if (badgeEl) badgeEl.className = 'inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] sm:text-[11px] font-black bg-rose-500/25 text-rose-300 border border-rose-500/60 animate-pulse shadow-rose-500/20';
+        } else if (days === 0) {
+          if (badgeEl) badgeEl.className = 'inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] sm:text-[11px] font-bold bg-amber-500/20 text-amber-300 border border-amber-500/40 shadow-amber-500/20';
+        } else {
+          if (badgeEl) badgeEl.className = 'inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] sm:text-[11px] font-bold bg-amber-500/15 text-amber-300 border border-amber-500/30';
+        }
+      }
+
+      update();
+      deadlineTimerInterval = setInterval(update, 1000);
+    }
+
+    // FEATURE 5: SQUAD CARD EXPORT & SHARE
+    function openShareModal() {
+      if (!appData) return;
+      const modal = document.getElementById('share-modal');
+      if (!modal) return;
+
+      // Populate Export Metadata
+      document.getElementById('exp-team-name').innerText = appData.entry.name;
+      document.getElementById('exp-manager-name').innerText = `${appData.entry.player_first_name} ${appData.entry.player_last_name}`;
+      document.getElementById('exp-gw-badge').innerText = `GW${appData.current_event}`;
+      document.getElementById('exp-points').innerText = `${document.getElementById('pitch-total-points').innerText}`;
+      document.getElementById('exp-rank').innerText = `${document.getElementById('stat-overall-rank').innerText}`;
+
+      const lastGw = (appData.history && appData.history.current && appData.history.current.length > 0) ? appData.history.current[appData.history.current.length - 1] : null;
+      if (lastGw) {
+        document.getElementById('exp-bank').innerText = `£${(lastGw.bank / 10).toFixed(1)}m`;
+      }
+
+      const starting = (appData.picks || []).filter(p => p.position <= 11);
+      const bench = (appData.picks || []).filter(p => p.position > 11);
+
+      const fwd = starting.filter(p => p.element_type === 4);
+      const mid = starting.filter(p => p.element_type === 3);
+      const def = starting.filter(p => p.element_type === 2);
+      const gk = starting.filter(p => p.element_type === 1);
+
+      document.getElementById('exp-formation').innerText = `${def.length}-${mid.length}-${fwd.length}`;
+
+      function renderExpCard(p) {
+        const cap = p.is_captain ? '<span class="bg-amber-400 text-black text-[8px] font-black px-1 rounded">C</span>' :
+                    p.is_vice_captain ? '<span class="bg-slate-300 text-black text-[8px] font-bold px-1 rounded">V</span>' : '';
+        const teamBg = clubColors[p.team_short] || '#38003c';
+        const proxyImg = `/api/image-proxy?url=${encodeURIComponent(getClubKitUrl(p.team_code, p.element_type))}`;
+        
+        return `
+          <div class="w-[72px] sm:w-[84px] bg-[#070c18]/90 rounded-xl p-1.5 text-center border border-white/15 shadow-md flex-shrink-0">
+            <div class="flex items-center justify-between gap-1 mb-0.5">
+              <span class="text-[7px] font-black px-1 rounded uppercase text-white truncate" style="background:${teamBg};">${p.team_short}</span>
+              ${cap}
+            </div>
+            <img src="${proxyImg}" class="w-8 h-8 sm:w-10 sm:h-10 mx-auto object-contain my-0.5 filter drop-shadow" crossOrigin="anonymous" />
+            <div class="text-[9px] font-black text-white truncate leading-tight mt-0.5">${p.web_name}</div>
+            <div class="text-[8px] font-mono text-cyan-300 mt-0.5">${p.event_points || 0} pts</div>
+          </div>
+        `;
+      }
+
+      document.getElementById('exp-pitch-fwd').innerHTML = fwd.map(renderExpCard).join('');
+      document.getElementById('exp-pitch-mid').innerHTML = mid.map(renderExpCard).join('');
+      document.getElementById('exp-pitch-def').innerHTML = def.map(renderExpCard).join('');
+      document.getElementById('exp-pitch-gk').innerHTML = gk.map(renderExpCard).join('');
+
+      document.getElementById('exp-pitch-bench').innerHTML = bench.map(p => {
+        const teamBg = clubColors[p.team_short] || '#38003c';
+        const proxyImg = `/api/image-proxy?url=${encodeURIComponent(getClubKitUrl(p.team_code, p.element_type))}`;
+        return `
+          <div class="p-1 rounded-lg bg-[#0b1329] border border-white/10 text-center">
+            <div class="text-[7px] font-mono text-slate-400">Sub ${p.position - 11}</div>
+            <img src="${proxyImg}" class="w-6 h-6 mx-auto object-contain my-0.5" crossOrigin="anonymous" />
+            <div class="text-[8px] font-bold text-white truncate">${p.web_name}</div>
+            <div class="text-[7px] text-slate-400">${p.team_short} • ${p.event_points || 0} pts</div>
+          </div>
+        `;
+      }).join('');
+
+      modal.classList.remove('hidden');
+    }
+
+    function closeShareModal() {
+      const modal = document.getElementById('share-modal');
+      if (modal) modal.classList.add('hidden');
+    }
+
+    function showShareToast(msg) {
+      const toast = document.getElementById('share-toast');
+      if (!toast) return;
+      toast.innerText = msg;
+      toast.classList.remove('hidden');
+      setTimeout(() => toast.classList.add('hidden'), 3500);
+    }
+
+    async function downloadSquadCard() {
+      const cardEl = document.getElementById('squad-export-card');
+      if (!cardEl) return;
+      const btn = document.getElementById('btn-dl-squad');
+      const originalText = btn.innerHTML;
+      btn.innerHTML = '<span>⏳</span> Rendering...';
+      btn.disabled = true;
+
+      try {
+        const canvas = await html2canvas(cardEl, {
+          scale: 2,
+          useCORS: true,
+          allowTaint: true,
+          backgroundColor: '#0b1329'
+        });
+        const imgUrl = canvas.toDataURL('image/png');
+        const link = document.createElement('a');
+        link.download = `${(appData.entry.name || 'FPL_Squad').replace(/\\s+/g, '_')}_GW${appData.current_event}_StartingXI.png`;
+        link.href = imgUrl;
+        link.click();
+        showShareToast('📥 Gambar kartu skuad berhasil diunduh (HD PNG)!');
+      } catch (err) {
+        console.error('Error generating card image:', err);
+        alert('Gagal menghasilkan gambar kartu: ' + err.message);
+      } finally {
+        btn.innerHTML = originalText;
+        btn.disabled = false;
+      }
+    }
+
+    async function copySquadImage() {
+      const cardEl = document.getElementById('squad-export-card');
+      if (!cardEl) return;
+      const btn = document.getElementById('btn-copy-img');
+      const originalText = btn.innerHTML;
+      btn.innerHTML = '<span>⏳</span> Menyalin...';
+      btn.disabled = true;
+
+      try {
+        const canvas = await html2canvas(cardEl, {
+          scale: 2,
+          useCORS: true,
+          allowTaint: true,
+          backgroundColor: '#0b1329'
+        });
+
+        canvas.toBlob(async (blob) => {
+          if (!blob) {
+            downloadSquadCard();
+            return;
+          }
+          try {
+            await navigator.clipboard.write([
+              new ClipboardItem({ 'image/png': blob })
+            ]);
+            showShareToast('📋 Gambar berhasil disalin ke clipboard! Siap di-paste ke WhatsApp.');
+          } catch (clipErr) {
+            console.warn('Clipboard write blocked, falling back to download:', clipErr);
+            downloadSquadCard();
+          }
+        }, 'image/png');
+      } catch (err) {
+        console.error('Error copying squad image:', err);
+        downloadSquadCard();
+      } finally {
+        btn.innerHTML = originalText;
+        btn.disabled = false;
+      }
+    }
+
+    function copySquadText() {
+      if (!appData) return;
+      const starting = (appData.picks || []).filter(p => p.position <= 11);
+      const bench = (appData.picks || []).filter(p => p.position > 11);
+
+      const fwd = starting.filter(p => p.element_type === 4);
+      const mid = starting.filter(p => p.element_type === 3);
+      const def = starting.filter(p => p.element_type === 2);
+      const gk = starting.filter(p => p.element_type === 1);
+
+      function formatLine(arr) {
+        return arr.map(p => {
+          let s = p.web_name;
+          if (p.is_captain) s += ' (C)';
+          if (p.is_vice_captain) s += ' (V)';
+          return s;
+        }).join(', ');
+      }
+
+      const text = [
+        `⚽ *${appData.entry.name.toUpperCase()} - FPL GW${appData.current_event} TACTICAL REPORT*`,
+        `👤 Manajer: ${appData.entry.player_first_name} ${appData.entry.player_last_name}`,
+        `🏆 Overall Rank: #${(appData.entry.summary_overall_rank || 0).toLocaleString()} • Poin: ${appData.entry.summary_overall_points || 0}`,
+        ``,
+        `🧤 GK: ${formatLine(gk)}`,
+        `🛡️ DEF: ${formatLine(def)}`,
+        `⚡ MID: ${formatLine(mid)}`,
+        `🎯 FWD: ${formatLine(fwd)}`,
+        ``,
+        `🪑 Bench: ${bench.map(p => p.web_name).join(', ')}`,
+        `💰 Formasi: ${def.length}-${mid.length}-${fwd.length} • Bank: £${((appData.history?.current?.slice(-1)[0]?.bank || 0) / 10).toFixed(1)}m`,
+        ``,
+        `🚀 Dibuat via FPL Command Center`
+      ].join('\\n');
+
+      navigator.clipboard.writeText(text).then(() => {
+        showShareToast('💬 Teks ringkasan skuad disalin! Siap di-paste ke grup WhatsApp.');
+      }).catch(err => {
+        alert('Gagal menyalin teks: ' + err.message);
+      });
+    }
+
+    // Refresh Data Handler
+    function refreshData() {
+      const icon = document.getElementById('refresh-icon');
+      icon.classList.add('animate-spin');
+      loadData().then(() => {
+        setTimeout(() => icon.classList.remove('animate-spin'), 600);
+      });
+    }
+
+    // Main Data Loading Pipeline
     async function loadData() {
       try {
         const res = await fetch('/api/user-team?id=2805703');
@@ -346,6 +2351,7 @@ HTML_PAGE = """<!DOCTYPE html>
 
         // Populate Teams Dropdown
         const teamSelect = document.getElementById('filter-team');
+        teamSelect.innerHTML = '<option value="0">Semua 20 Klub PL</option>';
         (appData.teams || []).forEach(t => {
           const opt = document.createElement('option');
           opt.value = t.id;
@@ -353,20 +2359,45 @@ HTML_PAGE = """<!DOCTYPE html>
           teamSelect.appendChild(opt);
         });
 
-        // Fill Profile
-        document.getElementById('team-name').innerText = appData.entry.name;
-        document.getElementById('manager-name').innerText = appData.entry.player_first_name + ' ' + appData.entry.player_last_name;
-        document.getElementById('gw-badge').innerText = 'GAMEWEEK ' + appData.current_event + ' LIVE';
-        document.getElementById('stat-points').innerText = (appData.entry.summary_overall_points || 0).toLocaleString();
-        document.getElementById('stat-rank').innerText = '#' + (appData.entry.summary_overall_rank || 0).toLocaleString();
-        document.getElementById('stat-bank').innerText = '£' + ((appData.entry.last_deadline_bank || 0) / 10).toFixed(1) + 'm';
+        // Fill Profile & Header
+        document.getElementById('header-team-name').innerText = appData.entry.name;
+        document.getElementById('header-manager-name').innerText = `${appData.entry.player_first_name} ${appData.entry.player_last_name}`;
+        document.getElementById('badge-gameweek').innerText = `GW${appData.current_event} LIVE`;
+
+        // Fill Stat Cards
+        document.getElementById('stat-total-points').innerText = (appData.entry.summary_overall_points || 0).toLocaleString();
+        document.getElementById('stat-overall-rank').innerText = `#${(appData.entry.summary_overall_rank || 0).toLocaleString()}`;
+        
+        const lastGw = (appData.history && appData.history.current && appData.history.current.length > 0) ? appData.history.current[appData.history.current.length - 1] : null;
+        if (lastGw) {
+          document.getElementById('stat-gw-points').innerText = `${lastGw.points} Pts`;
+          document.getElementById('stat-gw-rank').innerText = `Rank: ${(lastGw.rank / 1000000).toFixed(1)}M`;
+          document.getElementById('stat-rank-percentile').innerText = `Top ${lastGw.overall_rank_percentage || '24'}% Global`;
+          document.getElementById('stat-bank-balance').innerText = `£${(lastGw.bank / 10).toFixed(1)}m`;
+          document.getElementById('stat-squad-value').innerText = `£${(lastGw.value / 10).toFixed(1)}m`;
+        }
 
         renderPitch();
+        renderInsights();
+        fetchTargets();
+
+        // Feature 2: Start Countdown Timer
+        if (appData.next_event) {
+          startDeadlineCountdown(appData.next_event.deadline_time, appData.next_event.name);
+        }
+
+        // Feature 1: Render Market Trends
+        if (appData.market_trends) {
+          renderMarketTrends(appData.market_trends);
+        }
+
       } catch (err) {
-        console.error(err);
+        console.error('Failed to load user team data:', err);
       }
     }
 
+    // Start App
+    setTheme(currentTheme);
     loadData();
   </script>
 </body>
@@ -375,45 +2406,235 @@ HTML_PAGE = """<!DOCTYPE html>
 
 class FplProxyHandler(http.server.SimpleHTTPRequestHandler):
     def do_GET(self):
-        if self.path.startswith("/api/user-team"):
+        parsed_url = urlparse(self.path)
+        
+        # API 0: Image Proxy (CORS and Canvas Safe)
+        if parsed_url.path == "/api/image-proxy":
             try:
-                static_data = fetch_json(f"{BASE_URL}/bootstrap-static/")
-                teams_map = {t["id"]: t["short_name"] for t in static_data.get("teams", [])}
-                elements_map = {e["id"]: e for e in static_data.get("elements", [])}
-                
-                entry_data = fetch_json(f"{BASE_URL}/entry/2805703/")
-                curr_event = entry_data.get("current_event", 5)
+                query = parse_qs(parsed_url.query)
+                target_url = query.get("url", [None])[0]
+                if not target_url or not (
+                    target_url.startswith("https://resources.premierleague.com/") or
+                    target_url.startswith("https://fantasy.premierleague.com/")
+                ):
+                    self.send_response(400)
+                    self.end_headers()
+                    self.wfile.write(b"Invalid target URL")
+                    return
+                req = urllib.request.Request(target_url, headers=HEADERS)
+                with urllib.request.urlopen(req, timeout=10) as resp:
+                    content_type = resp.headers.get("Content-Type", "image/png")
+                    img_data = resp.read()
+                    self.send_response(200)
+                    self.send_header("Content-Type", content_type)
+                    self.send_header("Access-Control-Allow-Origin", "*")
+                    self.send_header("Cache-Control", "public, max-age=86400")
+                    self.end_headers()
+                    self.wfile.write(img_data)
+            except Exception as e:
+                self.send_response(500)
+                self.end_headers()
+                self.wfile.write(str(e).encode())
+            return
 
-                picks_data = fetch_json(f"{BASE_URL}/entry/2805703/event/{curr_event}/picks/")
-                
+        # API 1: User Team Profile, Picks, History, and Leagues
+        elif parsed_url.path == "/api/user-team":
+            try:
+                static_data = fetch_json(f"{BASE_URL}/bootstrap-static/", ttl=600)
+                teams_map = {t["id"]: t for t in static_data.get("teams", [])}
+                elements_map = {e["id"]: e for e in static_data.get("elements", [])}
+
+                # Determine current event
+                curr_event = 5
+                for ev in static_data.get("events", []):
+                    if ev.get("is_current"):
+                        curr_event = ev.get("id", 5)
+                        break
+
+                entry_data = fetch_json(f"{BASE_URL}/entry/2805703/", ttl=180)
+                curr_event = entry_data.get("current_event", curr_event)
+                hist_data = fetch_json(f"{BASE_URL}/entry/2805703/history/", ttl=180)
+                picks_data = fetch_json(f"{BASE_URL}/entry/2805703/event/{curr_event}/picks/", ttl=180)
+
+                # Fetch upcoming fixtures for next 3 gameweeks
+                fixtures_by_team = {t["id"]: [] for t in static_data.get("teams", [])}
+                for gw in range(curr_event + 1, min(curr_event + 4, 39)):
+                    try:
+                        fix_list = fetch_json(f"{BASE_URL}/fixtures/?event={gw}", ttl=600)
+                        for f in fix_list:
+                            h, a = f["team_h"], f["team_a"]
+                            if h in fixtures_by_team:
+                                fixtures_by_team[h].append({
+                                    "gw": gw,
+                                    "opp": teams_map.get(a, {}).get("short_name", "PL"),
+                                    "is_home": True,
+                                    "fdr": f.get("team_h_difficulty", 3)
+                                })
+                            if a in fixtures_by_team:
+                                fixtures_by_team[a].append({
+                                    "gw": gw,
+                                    "opp": teams_map.get(h, {}).get("short_name", "PL"),
+                                    "is_home": False,
+                                    "fdr": f.get("team_a_difficulty", 3)
+                                })
+                    except Exception as e:
+                        print("Error fetching fixtures for gw", gw, e)
+
+                # Enrich picks
                 picks_enriched = []
                 for pick in picks_data.get("picks", []):
                     el_id = pick["element"]
-                    el_info = elements_map.get(el_id, {})
+                    el = elements_map.get(el_id, {})
+                    t_info = teams_map.get(el.get("team"), {})
+                    t_id = el.get("team")
+
                     picks_enriched.append({
                         "element_id": el_id,
                         "position": pick.get("position"),
                         "multiplier": pick.get("multiplier"),
                         "is_captain": pick.get("is_captain"),
                         "is_vice_captain": pick.get("is_vice_captain"),
-                        "web_name": el_info.get("web_name", "Unknown"),
-                        "team_short": teams_map.get(el_info.get("team"), "-"),
-                        "element_type": el_info.get("element_type", 1),
-                        "now_cost": el_info.get("now_cost", 0),
-                        "event_points": el_info.get("event_points", 0),
-                        "total_points": el_info.get("total_points", 0),
-                        "form": el_info.get("form", "0.0")
+                        "web_name": el.get("web_name", "Unknown"),
+                        "code": el.get("code", 0),
+                        "team_code": t_info.get("code", 0),
+                        "team_short": t_info.get("short_name", "-"),
+                        "team_name": t_info.get("name", "PL"),
+                        "element_type": el.get("element_type", 1),
+                        "now_cost": el.get("now_cost", 0),
+                        "event_points": el.get("event_points", 0),
+                        "total_points": el.get("total_points", 0),
+                        "form": el.get("form", "0.0"),
+                        "ep_next": el.get("ep_next", "0.0"),
+                        "status": el.get("status", "a"),
+                        "news": el.get("news", ""),
+                        "chance_of_playing_next_round": el.get("chance_of_playing_next_round"),
+                        "selected_by_percent": el.get("selected_by_percent", "0.0"),
+                        "upcoming_fixtures": fixtures_by_team.get(t_id, [])
                     })
+
+                # Determine Next Event for Deadline Timer
+                next_event = None
+                for ev in static_data.get("events", []):
+                    if ev.get("is_next"):
+                        next_event = {
+                            "id": ev.get("id"),
+                            "name": ev.get("name"),
+                            "deadline_time": ev.get("deadline_time"),
+                            "deadline_time_epoch": ev.get("deadline_time_epoch")
+                        }
+                        break
+                if not next_event:
+                    for ev in static_data.get("events", []):
+                        if ev.get("id") == curr_event + 1:
+                            next_event = {
+                                "id": ev.get("id"),
+                                "name": ev.get("name"),
+                                "deadline_time": ev.get("deadline_time"),
+                                "deadline_time_epoch": ev.get("deadline_time_epoch")
+                            }
+                            break
+
+                # Market Trends & Price Alerts
+                all_elements = static_data.get("elements", [])
+                
+                # Top 5 Transfers IN across league
+                sorted_in = sorted(all_elements, key=lambda x: x.get("transfers_in_event", 0), reverse=True)[:5]
+                top_in = []
+                for el in sorted_in:
+                    t_info = teams_map.get(el.get("team"), {})
+                    top_in.append({
+                        "id": el["id"],
+                        "web_name": el["web_name"],
+                        "code": el["code"],
+                        "team_short": t_info.get("short_name", "PL"),
+                        "element_type": el.get("element_type", 1),
+                        "now_cost": el.get("now_cost", 0),
+                        "transfers_in_event": el.get("transfers_in_event", 0),
+                        "net_transfers": el.get("transfers_in_event", 0) - el.get("transfers_out_event", 0),
+                        "form": el.get("form", "0.0"),
+                        "selected_by_percent": el.get("selected_by_percent", "0.0")
+                    })
+
+                # Top 5 Transfers OUT across league
+                sorted_out = sorted(all_elements, key=lambda x: x.get("transfers_out_event", 0), reverse=True)[:5]
+                top_out = []
+                for el in sorted_out:
+                    t_info = teams_map.get(el.get("team"), {})
+                    top_out.append({
+                        "id": el["id"],
+                        "web_name": el["web_name"],
+                        "code": el["code"],
+                        "team_short": t_info.get("short_name", "PL"),
+                        "element_type": el.get("element_type", 1),
+                        "now_cost": el.get("now_cost", 0),
+                        "transfers_out_event": el.get("transfers_out_event", 0),
+                        "net_transfers": el.get("transfers_in_event", 0) - el.get("transfers_out_event", 0),
+                        "form": el.get("form", "0.0"),
+                        "selected_by_percent": el.get("selected_by_percent", "0.0")
+                    })
+
+                # Squad Price Change & Market Pressure Alerts
+                squad_alerts = []
+                for pick in picks_data.get("picks", []):
+                    el_id = pick["element"]
+                    el = elements_map.get(el_id, {})
+                    t_info = teams_map.get(el.get("team"), {})
+                    tin = el.get("transfers_in_event", 0)
+                    tout = el.get("transfers_out_event", 0)
+                    net = tin - tout
+
+                    if net < -35000 or (tout > 60000 and net < 0):
+                        squad_alerts.append({
+                            "id": el["id"],
+                            "web_name": el["web_name"],
+                            "code": el["code"],
+                            "team_short": t_info.get("short_name", "PL"),
+                            "element_type": el.get("element_type", 1),
+                            "now_cost": el.get("now_cost", 0),
+                            "trend": "fall",
+                            "risk_label": "Risiko Turun Harga",
+                            "net_transfers": net,
+                            "transfers_in": tin,
+                            "transfers_out": tout,
+                            "form": el.get("form", "0.0"),
+                            "news": el.get("news", "")
+                        })
+                    elif net > 35000 or (tin > 60000 and net > 0):
+                        squad_alerts.append({
+                            "id": el["id"],
+                            "web_name": el["web_name"],
+                            "code": el["code"],
+                            "team_short": t_info.get("short_name", "PL"),
+                            "element_type": el.get("element_type", 1),
+                            "now_cost": el.get("now_cost", 0),
+                            "trend": "rise",
+                            "risk_label": "Potensi Naik Harga",
+                            "net_transfers": net,
+                            "transfers_in": tin,
+                            "transfers_out": tout,
+                            "form": el.get("form", "0.0"),
+                            "news": el.get("news", "")
+                        })
+
+                squad_alerts.sort(key=lambda x: (0 if x["trend"] == "fall" else 1, abs(x["net_transfers"])), reverse=True)
 
                 payload = {
                     "entry": entry_data,
                     "current_event": curr_event,
-                    "teams": [{"id": t["id"], "name": t["name"]} for t in static_data.get("teams", [])],
+                    "next_event": next_event,
+                    "market_trends": {
+                        "top_in": top_in,
+                        "top_out": top_out,
+                        "squad_alerts": squad_alerts
+                    },
+                    "history": hist_data,
+                    "leagues": entry_data.get("leagues", {}).get("classic", []),
+                    "teams": [{"id": t["id"], "name": t["name"], "short_name": t["short_name"], "code": t["code"]} for t in static_data.get("teams", [])],
                     "picks": picks_enriched
                 }
 
                 self.send_response(200)
-                self.send_header("Content-Type", "application/json")
+                self.send_header("Content-Type", "application/json; charset=utf-8")
                 self.send_header("Access-Control-Allow-Origin", "*")
                 self.end_headers()
                 self.wfile.write(json.dumps(payload).encode())
@@ -422,94 +2643,135 @@ class FplProxyHandler(http.server.SimpleHTTPRequestHandler):
                 self.end_headers()
                 self.wfile.write(json.dumps({"error": str(e)}).encode())
 
-        elif self.path.startswith("/api/transfer-targets"):
+        # API 2: Transfer Target Recommendations
+        elif parsed_url.path == "/api/transfer-targets":
             try:
-                query = parse_qs(urlparse(self.path).query)
-                el_type = int(query.get("type", [1])[0])
+                query = parse_qs(parsed_url.query)
+                el_type = int(query.get("type", [0])[0])
                 max_cost = int(query.get("max_cost", [2000])[0])
                 filter_team = int(query.get("team", [0])[0])
                 sort_mode = query.get("sort", ["fdr"])[0]
+                search_q = query.get("q", [""])[0].lower().strip()
 
-                static_data = fetch_json(f"{BASE_URL}/bootstrap-static/")
-                teams_map = {t["id"]: t["short_name"] for t in static_data.get("teams", [])}
+                static_data = fetch_json(f"{BASE_URL}/bootstrap-static/", ttl=600)
+                teams_map = {t["id"]: t for t in static_data.get("teams", [])}
                 elements = static_data.get("elements", [])
-                
+
                 curr_event = 5
                 for ev in static_data.get("events", []):
                     if ev.get("is_current"):
                         curr_event = ev.get("id", 5)
                         break
-                next_event = curr_event + 1
 
-                fixtures_data = fetch_json(f"{BASE_URL}/fixtures/?event={next_event}")
-                team_fdr_map = {}
-                for fix in fixtures_data:
-                    h = fix["team_h"]
-                    a = fix["team_a"]
-                    team_fdr_map[h] = {
-                        "fdr": fix["team_h_difficulty"],
-                        "opp": f"{teams_map.get(a, 'PL')} (H)"
-                    }
-                    team_fdr_map[a] = {
-                        "fdr": fix["team_a_difficulty"],
-                        "opp": f"{teams_map.get(h, 'PL')} (A)"
-                    }
+                # Fetch next 3 fixtures
+                fixtures_by_team = {t["id"]: [] for t in static_data.get("teams", [])}
+                for gw in range(curr_event + 1, min(curr_event + 4, 39)):
+                    try:
+                        fix_list = fetch_json(f"{BASE_URL}/fixtures/?event={gw}", ttl=600)
+                        for f in fix_list:
+                            h, a = f["team_h"], f["team_a"]
+                            if h in fixtures_by_team:
+                                fixtures_by_team[h].append({
+                                    "gw": gw,
+                                    "opp": teams_map.get(a, {}).get("short_name", "PL"),
+                                    "is_home": True,
+                                    "fdr": f.get("team_h_difficulty", 3)
+                                })
+                            if a in fixtures_by_team:
+                                fixtures_by_team[a].append({
+                                    "gw": gw,
+                                    "opp": teams_map.get(h, {}).get("short_name", "PL"),
+                                    "is_home": False,
+                                    "fdr": f.get("team_a_difficulty", 3)
+                                })
+                    except Exception as e:
+                        pass
+
+                pos_labels = {1: "GK", 2: "DEF", 3: "MID", 4: "FWD"}
 
                 candidates = []
                 for el in elements:
-                    if el.get("element_type") != el_type:
+                    if el_type > 0 and el.get("element_type") != el_type:
                         continue
                     if el.get("now_cost", 0) > max_cost:
                         continue
-                    if el.get("status") == "u":
+                    if el.get("status") == "u": # unavailable/left club
                         continue
                     if filter_team > 0 and el.get("team") != filter_team:
                         continue
+                    if search_q and (search_q not in el.get("web_name", "").lower() and search_q not in el.get("first_name", "").lower() and search_q not in el.get("second_name", "").lower()):
+                        continue
 
                     t_id = el.get("team")
-                    fdr_info = team_fdr_map.get(t_id, {"fdr": 3, "opp": "TBD"})
+                    t_info = teams_map.get(t_id, {})
+                    upcoming = fixtures_by_team.get(t_id, [])
+                    avg_fdr = sum(f["fdr"] for f in upcoming) / len(upcoming) if upcoming else 3.0
 
                     candidates.append({
                         "id": el["id"],
                         "web_name": el["web_name"],
-                        "team_name": teams_map.get(t_id, "PL"),
+                        "code": el["code"],
+                        "team_code": t_info.get("code", 0),
+                        "team_name": t_info.get("short_name", "PL"),
+                        "element_type": el["element_type"],
+                        "position_label": pos_labels.get(el["element_type"], "PL"),
                         "now_cost": el["now_cost"],
                         "total_points": el["total_points"],
                         "form": el.get("form", "0.0"),
-                        "next_fixture_fdr": fdr_info["fdr"],
-                        "next_fixture_opp": fdr_info["opp"],
-                        "selected_by_percent": el.get("selected_by_percent", "0.0")
+                        "ep_next": el.get("ep_next", "0.0"),
+                        "selected_by_percent": el.get("selected_by_percent", "0.0"),
+                        "ict_index": el.get("ict_index", "0.0"),
+                        "status": el.get("status", "a"),
+                        "news": el.get("news", ""),
+                        "chance_of_playing_next_round": el.get("chance_of_playing_next_round"),
+                        "upcoming_fixtures": upcoming,
+                        "avg_fdr": avg_fdr
                     })
 
+                # Sorting rules
                 if sort_mode == "fdr":
-                    candidates.sort(key=lambda x: (x["next_fixture_fdr"], -float(x["form"])))
+                    candidates.sort(key=lambda x: (x["avg_fdr"], -float(x["form"]), -x["total_points"]))
                 elif sort_mode == "form":
                     candidates.sort(key=lambda x: float(x["form"]), reverse=True)
                 elif sort_mode == "points":
                     candidates.sort(key=lambda x: x["total_points"], reverse=True)
+                elif sort_mode == "ep_next":
+                    candidates.sort(key=lambda x: float(x["ep_next"] or 0), reverse=True)
+                elif sort_mode == "value":
+                    candidates.sort(key=lambda x: (x["total_points"] / (x["now_cost"] / 10 + 0.1)), reverse=True)
+                elif sort_mode == "ict":
+                    candidates.sort(key=lambda x: float(x["ict_index"] or 0), reverse=True)
                 elif sort_mode == "cost_desc":
                     candidates.sort(key=lambda x: x["now_cost"], reverse=True)
+                elif sort_mode == "cost_asc":
+                    candidates.sort(key=lambda x: x["now_cost"])
 
                 self.send_response(200)
-                self.send_header("Content-Type", "application/json")
+                self.send_header("Content-Type", "application/json; charset=utf-8")
                 self.send_header("Access-Control-Allow-Origin", "*")
                 self.end_headers()
-                self.wfile.write(json.dumps(candidates[:20]).encode())
+                self.wfile.write(json.dumps(candidates[:40]).encode())
             except Exception as e:
                 self.send_response(500)
                 self.end_headers()
                 self.wfile.write(json.dumps({"error": str(e)}).encode())
 
+        # Default: Serve Modern Redesigned HTML Single Page App
         else:
             self.send_response(200)
             self.send_header("Content-Type", "text/html; charset=utf-8")
             self.end_headers()
             self.wfile.write(HTML_PAGE.encode())
 
+    def do_HEAD(self):
+        self.send_response(200)
+        self.send_header("Content-Type", "text/html; charset=utf-8")
+        self.end_headers()
+
 def run():
     socketserver.TCPServer.allow_reuse_address = True
     with socketserver.TCPServer(("", PORT), FplProxyHandler) as httpd:
-        print(f"Serving at http://localhost:{PORT}")
+        print(f"🚀 FPL Tactical Hub running at http://localhost:{PORT}")
         httpd.serve_forever()
 
 if __name__ == "__main__":

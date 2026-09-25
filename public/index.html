@@ -670,6 +670,12 @@
                 <span id="pitch-view-label">3D Tilt</span>
               </button>
 
+              <!-- Substitute / Swap Mode Toggle -->
+              <button onclick="toggleSubMode()" id="btn-sub-mode-toggle" title="Mode Substitusi: Tukar pemain bench ke starting XI" class="px-2.5 py-1 rounded-xl bg-white/5 hover:bg-white/10 text-slate-300 border border-white/10 text-xs font-bold flex items-center gap-1.5 transition cursor-pointer">
+                <span>🔁</span>
+                <span id="sub-mode-label">Tukar Pemain</span>
+              </button>
+
               <!-- Display Mode Toggle -->
               <div class="flex items-center gap-1 bg-[#070417] p-1 rounded-xl border border-white/10 text-[10px]">
                 <span class="text-slate-400 px-1 font-bold">Tampilan:</span>
@@ -700,6 +706,24 @@
               </div>
 
             </div>
+          </div>
+
+          <!-- Active Substitution Banner -->
+          <div id="sub-active-banner" class="hidden mb-3 p-3 rounded-2xl bg-gradient-to-r from-amber-500/25 via-emerald-500/20 to-[#070417] border border-amber-400/50 shadow-xl flex items-center justify-between gap-3 text-xs">
+            <div class="flex items-center gap-3 min-w-0">
+              <div class="w-8 h-8 rounded-xl bg-amber-400/20 border border-amber-400/40 flex items-center justify-center text-base flex-shrink-0 animate-bounce">
+                🔁
+              </div>
+              <div class="truncate">
+                <span class="text-[10px] font-black uppercase tracking-wider text-amber-300 block">Mode Substitusi Aktif</span>
+                <div class="text-white font-bold text-xs truncate">
+                  Pilih pemain untuk ditukar dengan <strong class="text-pl-green font-black" id="sub-active-player-name">-</strong>
+                </div>
+              </div>
+            </div>
+            <button onclick="cancelSubstitution()" class="px-3 py-1.5 rounded-xl bg-white/10 hover:bg-white/20 text-white font-bold text-xs transition cursor-pointer flex-shrink-0 border border-white/10">
+              Batal ✕
+            </button>
           </div>
 
           <!-- REALISTIC 3D STADIUM PITCH CANVAS -->
@@ -760,12 +784,17 @@
 
           <!-- BENCH TRAY (DUGOUT SUBSTITUTES) -->
           <div class="mt-4 pt-3 border-t border-white/10">
-            <div class="flex items-center justify-between mb-2.5">
+            <div class="flex flex-wrap items-center justify-between gap-2 mb-2.5">
               <div class="flex items-center gap-2">
                 <span class="text-[10px] font-black uppercase tracking-wider text-slate-300">Dugout Substitutes (Cadangan)</span>
-                <span class="text-[10px] px-2 py-0.5 rounded-full bg-white/5 border border-white/10 text-slate-400">Urutan Otomatis</span>
+                <span class="text-[10px] px-2 py-0.5 rounded-full bg-white/5 border border-white/10 text-slate-400">💡 Klik pemain untuk tukar ke lapangan</span>
               </div>
-              <span class="text-xs font-mono font-bold text-slate-400" id="bench-points-total">-</span>
+              <div class="flex items-center gap-2">
+                <button id="btn-reset-formation" onclick="resetSquadFormation()" class="hidden px-2.5 py-1 rounded-lg bg-rose-500/15 hover:bg-rose-500/25 text-rose-300 text-[10px] font-extrabold border border-rose-500/30 transition flex items-center gap-1 cursor-pointer">
+                  <span>↩️</span> Reset Susunan Awal
+                </button>
+                <span class="text-xs font-mono font-bold text-slate-400" id="bench-points-total">-</span>
+              </div>
             </div>
 
             <div class="grid grid-cols-2 sm:grid-cols-4 gap-2.5" id="pitch-bench">
@@ -1376,6 +1405,8 @@
     let activePosFilter = 0;
     let cachedTargets = [];
     let isPitch3D = false;
+    let subSelectedPlayer = null;
+    let isSubModeActive = false;
 
     // Toggle 2D Flat / 3D Stadium Perspective
     function togglePitch3DView() {
@@ -1583,6 +1614,23 @@
       const isSelected = selectedPlayer && selectedPlayer.element_id === p.element_id;
       const isSimulated = p.is_simulated;
 
+      // Substitution State Check
+      const isSubSource = subSelectedPlayer && subSelectedPlayer.element_id === p.element_id;
+      const isSubTarget = subSelectedPlayer && canSwapPlayers(subSelectedPlayer, p, appData.picks);
+      const isSubDisabled = subSelectedPlayer && !isSubSource && !isSubTarget;
+
+      let subClass = '';
+      let subBadge = '';
+      if (isSubSource) {
+        subClass = 'ring-2 ring-amber-400 bg-amber-500/25 shadow-[0_0_22px_rgba(251,191,36,0.65)] scale-105 z-20';
+        subBadge = `<span class="bg-amber-400 text-slate-950 font-black text-[7.5px] px-1.5 py-0.5 rounded shadow">🔁 Dipilih</span>`;
+      } else if (isSubTarget) {
+        subClass = 'ring-2 ring-pl-green bg-pl-green/20 animate-pulse shadow-[0_0_20px_rgba(0,255,135,0.6)] scale-[1.03] z-10 cursor-pointer';
+        subBadge = `<span class="bg-pl-green text-slate-950 font-black text-[7.5px] px-1.5 py-0.5 rounded shadow">⇄ Tukar</span>`;
+      } else if (isSubDisabled) {
+        subClass = 'opacity-30 grayscale-[60%] pointer-events-none';
+      }
+
       const capBadge = p.is_captain ? `
         <span class="badge-captain text-slate-950 font-black text-[8px] min-[390px]:text-[8.5px] px-1.5 py-0.5 rounded shadow ring-1 ring-yellow-300/80 flex items-center">
           (C)
@@ -1655,8 +1703,8 @@
       }
 
       return `
-        <div onclick="selectTransferOut(${p.element_id})" 
-             class="player-card spotlight-card ${isSelected ? 'is-selected' : ''} ${isSimulated ? 'ring-2 ring-pink-500' : ''} cursor-pointer rounded-xl p-1.5 sm:p-2 text-center w-[76px] min-[390px]:w-[84px] sm:w-[94px] md:w-[104px] shadow-xl relative group select-none">
+        <div onclick="handlePlayerCardClick(${p.element_id})" 
+             class="player-card spotlight-card ${subClass} ${isSelected ? 'is-selected' : ''} ${isSimulated ? 'ring-2 ring-pink-500' : ''} cursor-pointer rounded-xl p-1.5 sm:p-2 text-center w-[76px] min-[390px]:w-[84px] sm:w-[94px] md:w-[104px] shadow-xl relative group select-none transition-all duration-200">
           
           <!-- Club & Captain Header -->
           <div class="flex items-center justify-between gap-1 mb-1">
@@ -1667,8 +1715,12 @@
               </span>
             </div>
             <div class="flex items-center gap-1 flex-shrink-0">
-              ${doubtFlag}
-              ${capBadge}
+              ${subBadge || `${doubtFlag}${capBadge}`}
+              <button onclick="event.stopPropagation(); initiateSubstitution(${p.element_id})" 
+                      title="Tukar pemain ini (Substitusi)" 
+                      class="w-4 h-4 rounded-md bg-white/10 hover:bg-amber-400 hover:text-slate-950 text-slate-300 flex items-center justify-center text-[9px] font-bold transition cursor-pointer">
+                ⇄
+              </button>
             </div>
           </div>
 
@@ -1694,49 +1746,317 @@
       `;
     }
 
+    // Floating Toast Notification for Substitution & Tactical actions
+    function showSubToast(msg, isError = false) {
+      let toast = document.getElementById('sub-toast-notification');
+      if (!toast) {
+        toast = document.createElement('div');
+        toast.id = 'sub-toast-notification';
+        document.body.appendChild(toast);
+      }
+      toast.innerHTML = isError ? `<span>⚠️</span> <span>${msg}</span>` : `<span>✅</span> <span>${msg}</span>`;
+      toast.className = `fixed bottom-6 left-1/2 -translate-x-1/2 z-50 px-4 py-2.5 rounded-2xl text-xs font-extrabold shadow-2xl flex items-center gap-2 transition-all duration-300 pointer-events-none ${
+        isError 
+          ? 'bg-rose-950/95 text-rose-200 border border-rose-500/50 shadow-rose-900/40 opacity-100 translate-y-0' 
+          : 'bg-emerald-950/95 text-emerald-200 border border-emerald-500/50 shadow-emerald-900/40 opacity-100 translate-y-0'
+      }`;
+      clearTimeout(toast._timer);
+      toast._timer = setTimeout(() => {
+        toast.classList.remove('opacity-100', 'translate-y-0');
+        toast.classList.add('opacity-0', 'translate-y-3');
+      }, 3200);
+    }
+
+    // Validate if two players can be swapped according to FPL formation rules
+    function canSwapPlayers(pA, pB, picks) {
+      if (!pA || !pB || !picks || pA.element_id === pB.element_id) return false;
+
+      // GK Rule: Goalkeeper (pos 1 or 12, element_type 1) can ONLY swap with another Goalkeeper
+      if (pA.element_type === 1 || pB.element_type === 1) {
+        return pA.element_type === 1 && pB.element_type === 1;
+      }
+
+      const isAStarter = pA.position <= 11;
+      const isBStarter = pB.position <= 11;
+
+      // Bench with Bench: allow reordering auto-sub order among outfield bench (pos 13, 14, 15)
+      if (!isAStarter && !isBStarter) {
+        return true;
+      }
+
+      // Starter with Starter: outfield starters can swap position without changing formation
+      if (isAStarter && isBStarter) {
+        return true;
+      }
+
+      // Starter with Bench: check resulting formation legality (Min 3 DEF, 2 MID, 1 FWD; Max 5 DEF, 5 MID, 3 FWD)
+      const starters = picks.filter(p => p.position <= 11);
+      const outType = isAStarter ? pA.element_type : pB.element_type;
+      const inType = isAStarter ? pB.element_type : pA.element_type;
+
+      // Same position swap is always legal
+      if (outType === inType) return true;
+
+      let defCount = starters.filter(p => p.element_type === 2).length;
+      let midCount = starters.filter(p => p.element_type === 3).length;
+      let fwdCount = starters.filter(p => p.element_type === 4).length;
+
+      if (outType === 2) defCount--;
+      if (outType === 3) midCount--;
+      if (outType === 4) fwdCount--;
+
+      if (inType === 2) defCount++;
+      if (inType === 3) midCount++;
+      if (inType === 4) fwdCount++;
+
+      return (defCount >= 3 && defCount <= 5) &&
+             (midCount >= 2 && midCount <= 5) &&
+             (fwdCount >= 1 && fwdCount <= 3);
+    }
+
+    // Update Toolbar Substitution Button State
+    function updateSubModeButton() {
+      const btn = document.getElementById('btn-sub-mode-toggle');
+      const label = document.getElementById('sub-mode-label');
+      if (!btn) return;
+      if (isSubModeActive || subSelectedPlayer) {
+        btn.classList.add('bg-amber-500', 'text-slate-950', 'border-amber-400', 'shadow-lg', 'shadow-amber-500/25');
+        btn.classList.remove('bg-white/5', 'text-slate-300', 'border-white/10');
+        if (label) label.innerText = 'Batal Substitusi';
+      } else {
+        btn.classList.remove('bg-amber-500', 'text-slate-950', 'border-amber-400', 'shadow-lg', 'shadow-amber-500/25');
+        btn.classList.add('bg-white/5', 'text-slate-300', 'border-white/10');
+        if (label) label.innerText = 'Tukar Pemain';
+      }
+    }
+
+    // Start Substitution for a selected player
+    function startSubstitution(player) {
+      if (!player) return;
+      subSelectedPlayer = player;
+      isSubModeActive = true;
+      updateSubModeButton();
+      renderPitch();
+      showSubToast(`Pilih pemain untuk ditukar dengan ${player.web_name}`);
+    }
+
+    // Cancel current substitution
+    function cancelSubstitution() {
+      subSelectedPlayer = null;
+      isSubModeActive = false;
+      updateSubModeButton();
+      renderPitch();
+    }
+
+    // Toggle substitution mode via toolbar
+    function toggleSubMode() {
+      if (subSelectedPlayer || isSubModeActive) {
+        cancelSubstitution();
+      } else {
+        isSubModeActive = true;
+        updateSubModeButton();
+        showSubToast('Klik pemain yang ingin Anda tukar dari susunan tim');
+      }
+    }
+
+    // Initiate substitution from player card ⇄ icon
+    function initiateSubstitution(elementId) {
+      if (!appData || !appData.picks) return;
+      const player = appData.picks.find(p => p.element_id === elementId);
+      if (!player) return;
+
+      if (subSelectedPlayer && subSelectedPlayer.element_id === elementId) {
+        cancelSubstitution();
+        return;
+      }
+
+      if (subSelectedPlayer) {
+        if (canSwapPlayers(subSelectedPlayer, player, appData.picks)) {
+          executeSwap(subSelectedPlayer, player);
+          return;
+        } else {
+          showSubToast(`Tidak dapat menukar ${subSelectedPlayer.web_name} dengan ${player.web_name} (Formasi tidak legal)`, true);
+          return;
+        }
+      }
+
+      startSubstitution(player);
+    }
+
+    // Handle click on player card
+    function handlePlayerCardClick(elementId) {
+      if (!appData || !appData.picks) return;
+      const clickedPlayer = appData.picks.find(p => p.element_id === elementId);
+      if (!clickedPlayer) return;
+
+      if (subSelectedPlayer) {
+        if (subSelectedPlayer.element_id === clickedPlayer.element_id) {
+          cancelSubstitution();
+          return;
+        }
+        if (canSwapPlayers(subSelectedPlayer, clickedPlayer, appData.picks)) {
+          executeSwap(subSelectedPlayer, clickedPlayer);
+          return;
+        } else {
+          showSubToast(`Tidak dapat menukar: Harus memenuhi formasi FPL (Min 3 Bek, 2 MID, 1 FWD)`, true);
+          return;
+        }
+      }
+
+      if (isSubModeActive) {
+        startSubstitution(clickedPlayer);
+        return;
+      }
+
+      // Normal flow: Open transfer planner for this player
+      selectTransferOut(elementId);
+    }
+
+    // Execute swap between two players
+    function executeSwap(pA, pB) {
+      if (!canSwapPlayers(pA, pB, appData.picks)) {
+        showSubToast('Pergantian tidak valid sesuai aturan FPL', true);
+        return;
+      }
+
+      const isAStarter = pA.position <= 11;
+      const isBStarter = pB.position <= 11;
+
+      // Swap positions
+      const tempPos = pA.position;
+      pA.position = pB.position;
+      pB.position = tempPos;
+
+      // Handle Captaincy if a starter goes to bench
+      if (isAStarter && !isBStarter) {
+        if (pA.is_captain) {
+          pA.is_captain = false;
+          pA.multiplier = 1;
+          pB.is_captain = true;
+          pB.multiplier = 2;
+          showSubToast(`Ban kapten dialihkan ke ${pB.web_name} karena ${pA.web_name} ke bangku cadangan.`);
+        }
+        if (pA.is_vice_captain) {
+          pA.is_vice_captain = false;
+          pB.is_vice_captain = true;
+        }
+      } else if (!isAStarter && isBStarter) {
+        if (pB.is_captain) {
+          pB.is_captain = false;
+          pB.multiplier = 1;
+          pA.is_captain = true;
+          pA.multiplier = 2;
+          showSubToast(`Ban kapten dialihkan ke ${pA.web_name} karena ${pB.web_name} ke bangku cadangan.`);
+        }
+        if (pB.is_vice_captain) {
+          pB.is_vice_captain = false;
+          pA.is_vice_captain = true;
+        }
+      }
+
+      // Sort picks by position
+      appData.picks.sort((a, b) => a.position - b.position);
+
+      showSubToast(`Berhasil menukar ${pA.web_name} ⇄ ${pB.web_name}`);
+
+      subSelectedPlayer = null;
+      isSubModeActive = false;
+      updateSubModeButton();
+      renderPitch();
+    }
+
+    // Reset Squad to Original Picks
+    function resetSquadFormation() {
+      if (!appData || !appData.originalPicks) return;
+      appData.picks = JSON.parse(JSON.stringify(appData.originalPicks));
+      subSelectedPlayer = null;
+      isSubModeActive = false;
+      updateSubModeButton();
+      renderPitch();
+      showSubToast('Susunan formasi dan bangku cadangan dikembalikan ke awal.');
+    }
+
     // Render Full Pitch & Bench
     function renderPitch() {
-      if (!appData) return;
+      if (!appData || !appData.picks) return;
       const picks = appData.picks;
       const starters = picks.filter(p => p.position <= 11);
-      const bench = picks.filter(p => p.position > 11);
+      const bench = picks.filter(p => p.position > 11).sort((a, b) => a.position - b.position);
 
       // Compute Dynamic Formation
       const defCount = starters.filter(p => p.element_type === 2).length;
       const midCount = starters.filter(p => p.element_type === 3).length;
       const fwdCount = starters.filter(p => p.element_type === 4).length;
-      document.getElementById('pitch-formation-badge').innerText = `FORMASI ${defCount}-${midCount}-${fwdCount}`;
+      const formBadge = document.getElementById('pitch-formation-badge');
+      if (formBadge) formBadge.innerText = `FORMASI ${defCount}-${midCount}-${fwdCount}`;
 
       // Render Rows
-      document.getElementById('pitch-gk').innerHTML = starters.filter(p => p.element_type === 1).map(p => renderPlayerCard(p)).join('');
-      document.getElementById('pitch-def').innerHTML = starters.filter(p => p.element_type === 2).map(p => renderPlayerCard(p)).join('');
-      document.getElementById('pitch-mid').innerHTML = starters.filter(p => p.element_type === 3).map(p => renderPlayerCard(p)).join('');
-      document.getElementById('pitch-fwd').innerHTML = starters.filter(p => p.element_type === 4).map(p => renderPlayerCard(p)).join('');
+      const gkEl = document.getElementById('pitch-gk');
+      if (gkEl) gkEl.innerHTML = starters.filter(p => p.element_type === 1).map(p => renderPlayerCard(p)).join('');
+      const defEl = document.getElementById('pitch-def');
+      if (defEl) defEl.innerHTML = starters.filter(p => p.element_type === 2).map(p => renderPlayerCard(p)).join('');
+      const midEl = document.getElementById('pitch-mid');
+      if (midEl) midEl.innerHTML = starters.filter(p => p.element_type === 3).map(p => renderPlayerCard(p)).join('');
+      const fwdEl = document.getElementById('pitch-fwd');
+      if (fwdEl) fwdEl.innerHTML = starters.filter(p => p.element_type === 4).map(p => renderPlayerCard(p)).join('');
       
       // Render Bench
-      document.getElementById('pitch-bench').innerHTML = bench.map((p, idx) => {
-        const benchLabel = (p.element_type === 1) ? 'GK Sub' : `Bench ${idx}`;
-        return `
-          <div class="relative">
-            <div class="text-[9px] font-extrabold text-slate-400 uppercase tracking-wider text-center mb-1">${benchLabel}</div>
-            ${renderPlayerCard(p, true)}
-          </div>
-        `;
-      }).join('');
+      const benchEl = document.getElementById('pitch-bench');
+      if (benchEl) {
+        let outfieldBenchIdx = 1;
+        benchEl.innerHTML = bench.map((p) => {
+          const benchLabel = (p.element_type === 1) ? 'GK Sub' : `Bench ${outfieldBenchIdx++}`;
+          return `
+            <div class="relative">
+              <div class="text-[9px] font-extrabold text-slate-400 uppercase tracking-wider text-center mb-1">${benchLabel}</div>
+              ${renderPlayerCard(p, true)}
+            </div>
+          `;
+        }).join('');
+      }
 
       // Captain Info
       const cap = starters.find(p => p.is_captain) || starters[0];
-      if (cap) {
-        document.getElementById('pitch-captain-name').innerText = `${cap.web_name} (${cap.event_points * 2} pts)`;
+      const capNameEl = document.getElementById('pitch-captain-name');
+      if (cap && capNameEl) {
+        capNameEl.innerText = `${cap.web_name} (${cap.event_points * 2} pts)`;
       }
 
       // Starting Points
       const totalStartersPts = starters.reduce((acc, p) => acc + (p.event_points * (p.is_captain ? 2 : 1)), 0);
-      document.getElementById('pitch-total-points').innerText = `${totalStartersPts} Pts`;
+      const pitchPtsEl = document.getElementById('pitch-total-points');
+      if (pitchPtsEl) pitchPtsEl.innerText = `${totalStartersPts} Pts`;
 
       // Bench Points
       const totalBenchPts = bench.reduce((acc, p) => acc + p.event_points, 0);
-      document.getElementById('bench-points-total').innerText = `${totalBenchPts} Pts di Cadangan`;
+      const benchPtsEl = document.getElementById('bench-points-total');
+      if (benchPtsEl) benchPtsEl.innerText = `${totalBenchPts} Pts di Cadangan`;
+
+      // Update Substitution Banner
+      const subBanner = document.getElementById('sub-active-banner');
+      const subBannerName = document.getElementById('sub-active-player-name');
+      if (subBanner) {
+        if (subSelectedPlayer) {
+          subBanner.classList.remove('hidden');
+          if (subBannerName) subBannerName.innerText = `${subSelectedPlayer.web_name} (${subSelectedPlayer.team_short})`;
+        } else {
+          subBanner.classList.add('hidden');
+        }
+      }
+
+      // Update Reset Formation Button
+      const resetBtn = document.getElementById('btn-reset-formation');
+      if (resetBtn) {
+        const hasFormationChanged = appData.originalPicks && appData.picks.some(p => {
+          const orig = appData.originalPicks.find(o => o.element_id === p.element_id);
+          return orig && orig.position !== p.position;
+        });
+        if (hasFormationChanged) {
+          resetBtn.classList.remove('hidden');
+        } else {
+          resetBtn.classList.add('hidden');
+        }
+      }
     }
 
     // Select Player to Transfer Out
@@ -3000,9 +3320,15 @@
           ftEl.innerText = `${ft} FT`;
         }
 
-        // Reset simulation on team switch
+        // Reset simulation and substitution on team switch
         selectedPlayer = null;
         simulationTarget = null;
+        subSelectedPlayer = null;
+        isSubModeActive = false;
+        updateSubModeButton();
+        if (appData && appData.picks) {
+          appData.originalPicks = JSON.parse(JSON.stringify(appData.picks));
+        }
         const banner = document.getElementById('sim-status-banner');
         if (banner) banner.classList.add('hidden');
 

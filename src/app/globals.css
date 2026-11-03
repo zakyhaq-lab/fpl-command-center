@@ -1,0 +1,100 @@
+@import "tailwindcss";
+
+/* Data-terminal style: cards darker than the ground, tabular digits, signs in
+   the text, and every selection marked by the same 1px accent line. The accent
+   is the Premier League's cyan in place of the style's blue. */
+:root {
+  --ground: #171719;
+  --surface: #131217;
+  --raised: #212023;
+  --border: #222224;
+  --rule: #1b1a1f;
+  --control: #3a3a3e;
+  --text: #ffffff;
+  --muted: #8a8c92;
+  --soft: #bdbdc0;
+  --accent: #38d6c6;
+  --positive: #44a282;
+  --negative: #e5566f;
+  --warning: #d9a441;
+  --pitch: #12251c;
+  --pitch-line: #1d3a2c;
+
+  /* Fixture difficulty, from easiest to hardest. Ink chosen per fill for 4.5:1. */
+  --fdr-1: #1b6a44;
+  --fdr-2: #5cc893;
+  --fdr-3: #3a3a3e;
+  --fdr-4: #b03a52;
+  --fdr-5: #6e1a2c;
+}
+
+@theme inline {
+  --color-ground: var(--ground);
+  --color-surface: var(--surface);
+  --color-raised: var(--raised);
+  --color-border: var(--border);
+  --color-rule: var(--rule);
+  --color-control: var(--control);
+  --color-text: var(--text);
+  --color-muted: var(--muted);
+  --color-soft: var(--soft);
+  --color-accent: var(--accent);
+  --color-positive: var(--positive);
+  --color-negative: var(--negative);
+  --color-warning: var(--warning);
+  --color-pitch: var(--pitch);
+  --color-pitch-line: var(--pitch-line);
+  --font-sans: var(--font-public-sans), Inter, system-ui, sans-serif;
+  --radius-card: 6px;
+}
+
+html {
+  color-scheme: dark;
+}
+
+body {
+  background: var(--ground);
+  color: var(--text);
+  font-family: var(--font-sans);
+  font-size: 13px;
+  line-height: 1.45;
+  font-variant-numeric: tabular-nums;
+}
+
+:focus-visible {
+  outline: 1px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.card {
+  background: var(--surface);
+  border-radius: 6px;
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.2);
+}
+
+/* The one selection mark: a 1px accent line as wide as its label. */
+.sel {
+  position: relative;
+}
+.sel[aria-current="page"]::after,
+.sel[aria-pressed="true"]::after,
+.sel[data-selected="true"] > td:first-child::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -1px;
+  height: 1px;
+  background: var(--accent);
+}
+
+.fdr-1 { background: var(--fdr-1); color: #fff; }
+.fdr-2 { background: var(--fdr-2); color: #0b1a12; }
+.fdr-3 { background: var(--fdr-3); color: #fff; }
+.fdr-4 { background: var(--fdr-4); color: #fff; }
+.fdr-5 { background: var(--fdr-5); color: #fff; }
+.fdr-blank { background: transparent; color: var(--muted); }
+
+@media (prefers-reduced-motion: reduce) {
+  * { transition: none !important; }
+}

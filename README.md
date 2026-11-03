@@ -1,77 +1,40 @@
-# FPL Tactical Command Center & Transfer Lab
+# FPL Command Center
 
-A high-tech, live broadcast dashboard and tactical transfer planner for Fantasy Premier League (FPL). Built with official Premier League broadcast aesthetics (Deep Navy, Electric Neon Purple `#38003C`, Mint/Cyan `#00FF87`, and glassmorphic panels).
+Live gameweek points and rank, a multi-gameweek fixture ticker and a multi-transfer planner for any Fantasy Premier League team.
 
-## ✨ Key Features & Upgrades
+Built with Next.js 16 (App Router, Cache Components), TypeScript and Tailwind CSS v4. The previous single-file Python version lives in [`legacy/`](legacy/).
 
-- **Instant Team Connect & SSO (No Password Required):**
-  - Seamless 1-click team connect using your numeric FPL **Team ID** or by pasting any official FPL team URL link.
-  - Zero password entry ensures 100% security with no risk of credential theft or API rate-limit bans.
-  - **Multi-Account Switcher & History:** Remembers up to 6 recently used FPL accounts in browser `localStorage` with 1-click instant switching and delete option.
-  - **Interactive Visual Guide:** Built-in accordion tutorial showing managers how to find their Team ID on `fantasy.premierleague.com`.
-- **Live Official FPL API Sync:** Direct real-time connection with FPL for team squad picks, current gameweek live points, overall rank, percentile, and bank balance.
-- **Live Theme Switcher & Visual Palettes:**
-  - Instantly switch between 6 curated high-end visual themes:
-    - ❄️ **Titanium Slate (Minimalist Default):** Deep Slate `#0B0F19` & Ice Blue `#38BDF8`.
-    - 💜 **Premier League Broadcast:** Electric Purple `#38003C` & Mint Cyan `#00FF87`.
-    - 🌲 **Midnight Emerald Tactical:** Pitch Black `#060B0E` & Emerald Green `#10B981`.
-    - ⚡ **Cyber Neon:** Deep Tech Navy `#050814`, Electric Cyan `#00F0FF`, and Hot Pink.
-    - 👑 **Royal Blue & Gold:** Deep Sapphire `#050C1F` & Metallic Gold `#FFC72C`.
-    - 🔴 **Crimson Stadium:** Deep Onyx `#0E0709` & Vivid Red `#FF4D6D`.
-  - Automatically saves choice in `localStorage` for persistent sessions.
-- **Realistic Stadium Pitch View (2D/3D):**
-  - Mowing grass stripes, floodlight illumination, and authentic pitch markings.
-  - Dynamic formation badge (e.g. `3-5-2`, `4-3-3`) calculated automatically from Starting XI.
-  - Rich player cards with official headshot photos (fallback to official club kit webp), captain/vice-captain gold crown badges, FDR fixture tags, injury/doubt status flags, and live gameweek points.
-  - Dedicated dugout bench tray with automatic substitution priority order.
-- **Smart Transfer Lab:**
-  - Multi-position filter (`Semua`, `🧤 GK`, `🛡️ DEF`, `⚡ MID`, `🎯 FWD`).
-  - Club filter across all 20 Premier League teams & instant name search.
-  - Dynamic budget slider synced with outgoing player value and bank budget.
-  - Multi-metric sorting: Easiest 3-GW Fixtures (FDR), Recent Form, Total Points, Expected Points (`xP`), Threat & ICT Index, Value for Money, and Price.
-  - **Upcoming 3-Gameweek Fixture Ticker:** Visual pill badges indicating next opponents, Home/Away, and FDR difficulty colors.
-- **Live Squad Simulation & Pitch Swap:**
-  - Real-time squad impact preview (Bank budget balance, form delta, points delta).
-  - One-click "Terapkan ke Formasi Pitch" to view simulated lineup directly on the pitch without altering official FPL team state.
-- **Head-to-Head (H2H) Player Comparison Modal:**
-  - Side-by-side dual player comparison with visual bar metrics (Form, Total Points, Expected Points, xG, xA, ICT Index, Ownership %).
-- **Manager Insights & Leagues Hub:**
-  - **Chips Tracker:** Status for Triple Captain (3xC), Wildcard, Free Hit, and Bench Boost.
-  - **Gameweek Progression History:** Gameweek-by-gameweek table of points, ranks, transfers, and bench points.
-  - **Classic Mini-Leagues Standings:** Real-time leaderboard tracking with rank movements (▲ / ▼).
-- **Gameweek Deadline Countdown Timer (Live Ticking):**
-  - Ticking live countdown in the broadcast header towards the official FPL transfer deadline.
-  - Dynamic urgency states: changes color to amber as deadline nears, and pulsing red under 2 hours.
-  - Localized deadline date and time format in WIB.
-- **Market Trends & Price Change Alert Radar:**
-  - **Squad Alerts:** Analyzes your 15-player squad for price rise candidates and price fall risks based on net event transfers.
-  - **Top 5 League Transfers IN & OUT:** Real-time radar of the most bought and sold players across millions of FPL managers.
-  - One-click "Cari Pengganti" to seamlessly route at-risk players into the Smart Transfer Lab.
-- **Share Squad Card & Export Studio (HD PNG & WhatsApp):**
-  - Renders a stadium matchday card with Starting XI layout, captaincy badges, dugout bench subs, and manager stats.
-  - **Download HD PNG:** High-definition image export via `html2canvas` with built-in CORS image proxying.
-  - **Copy Image:** One-click copy directly to system clipboard for instant pasting into WhatsApp Web, Telegram, Discord, or Twitter.
-  - **Copy Text:** Generates structured matchday lineup summary with emojis ready for group chat sharing.
+## Screens
 
-## 🚀 How to Run Locally
+| Route | What it does |
+| --- | --- |
+| `/` | Enter a team ID (or paste a Points page link). Shows the current gameweek and the five easiest fixture runs. |
+| `/team/[id]` | Live gameweek points, overall and gameweek rank, squad value, the squad on a pitch with live player points, rank by gameweek and recent gameweek history. |
+| `/team/[id]/fixtures` | Fixture difficulty for every club over 3, 5 or 8 gameweeks, sortable, filterable to your clubs. |
+| `/team/[id]/planner` | Plan several transfers for the next gameweek: bank after, free transfers (from your history, editable), points hit, FPL's expected points change, club limit and budget checks. Plans are saved in the browser per team and gameweek. |
+
+## Run
 
 ```bash
-python3 server.py
+npm install
+npm run dev
 ```
 
-Open `http://localhost:8080` in your web browser.
+Open http://localhost:3000.
 
-## 🌐 Deploy to Vercel
+## How data is fetched
 
-This project is pre-configured for **zero-config instant deployment** on [Vercel](https://vercel.com/):
+All FPL requests go through `src/lib/fpl/api.ts` on the server, trimmed to the fields the app uses and cached with `"use cache"`:
 
-- **Static Frontend (`index.html`):** Deployed directly on Vercel's global Edge CDN (<50ms delivery).
-- **Backend API (`api/index.py`):** Runs as a Python Serverless Function powered by standard library (zero pip build overhead).
-- **Routing Configuration (`vercel.json`):** Rewrites `/api/*` to the Python serverless function automatically.
+| Source | Revalidate |
+| --- | --- |
+| `bootstrap-static` (players, clubs, gameweeks) | 5 min |
+| `fixtures` | 2 min |
+| `event/{gw}/live` | 1 min |
+| `entry/{id}`, history, picks | 2 min |
 
-### Deploy Steps:
-1. Push this repository to your GitHub account (or import `zakyhaq-lab/fpl-command-center`).
-2. Go to **[vercel.com/new](https://vercel.com/new)** and click **Import** next to `fpl-command-center`.
-3. Keep default settings (Framework Preset: **Other**) and click **Deploy**.
-4. Your live app will be published on `https://fpl-command-center.vercel.app` (or your custom domain) with full live API syncing!
+## Known limits
 
+- Sale prices in the planner use the current price; FPL keeps half of any price rise, so the real bank can be slightly lower.
+- Free transfers are derived from public transfer history (one per gameweek, max five, kept through Wildcard and Free Hit). Adjust with the stepper if it differs.
+- Transfers made for the upcoming gameweek are private until its deadline, so they are not reflected.

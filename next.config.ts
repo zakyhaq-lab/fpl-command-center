@@ -2,8 +2,8 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   cacheComponents: true,
-  // Experimental: proxy the FPL API through Vercel's edge, which may not be
-  // blocked the way serverless functions are (they get 403).
+  // Proxy the FPL API through Vercel's edge: FPL answers serverless functions
+  // with 403 but lets the edge through. Used by src/lib/fpl/api.ts on Vercel.
   async rewrites() {
     return [{ source: "/fpl/:path*", destination: "https://fantasy.premierleague.com/api/:path*/" }];
   },

@@ -11,7 +11,19 @@ import type {
   Position,
 } from "./types";
 
-const BASE_URL = "https://fantasy.premierleague.com/api";
+/**
+ * FPL blocks Vercel's serverless functions with 403 but lets Vercel's edge
+ * through, so on Vercel requests go to this app's own /fpl rewrite (see
+ * next.config.ts) on the production domain; previews are behind Vercel
+ * Authentication and can't be fetched. FPL_API_BASE overrides both.
+ */
+const BASE_URL =
+  process.env.FPL_API_BASE ??
+  (process.env.VERCEL_PROJECT_PRODUCTION_URL
+    ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}/fpl`
+    : "https://fantasy.premierleague.com/api");
+// The rewrite adds FPL's trailing slash itself; sending one would cost a redirect.
+const PROXIED = !BASE_URL.startsWith("https://fantasy.premierleague.com");
 // The FPL API answers 403 to requests that don't look like a browser, which
 // happens from cloud hosts such as Vercel. Send full browser headers and, on a
 // 403, retry with the next user agent.
@@ -41,7 +53,7 @@ async function fetchJson<T>(path: string): Promise<T> {
   let lastError: unknown;
   for (const ua of USER_AGENTS) {
     try {
-      const res = await fetch(`${BASE_URL}${path}`, {
+      const res = await fetch(`${BASE_URL}${PROXIED ? path.replace(/\/$/, "") : path}`, {
         headers: { ...HEADERS, "User-Agent": ua },
         signal: AbortSignal.timeout(12_000),
       });

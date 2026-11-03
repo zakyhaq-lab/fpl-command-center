@@ -12,16 +12,53 @@ import type {
 } from "./types";
 
 const BASE_URL = "https://fantasy.premierleague.com/api";
-// The FPL API rejects requests without a browser-like user agent.
-const HEADERS = { "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)" };
+// The FPL API answers 403 to requests that don't look like a browser, which
+// happens from cloud hosts such as Vercel. Send full browser headers and, on a
+// 403, retry with the next user agent.
+const HEADERS = {
+  Accept: "application/json, text/plain, */*",
+  "Accept-Language": "en-GB,en-US;q=0.9,en;q=0.8",
+  Referer: "https://fantasy.premierleague.com/",
+  Origin: "https://fantasy.premierleague.com",
+  "Sec-Ch-Ua": '"Google Chrome";v="129", "Not=A?Brand";v="8", "Chromium";v="129"',
+  "Sec-Ch-Ua-Mobile": "?0",
+  "Sec-Ch-Ua-Platform": '"macOS"',
+  "Sec-Fetch-Dest": "empty",
+  "Sec-Fetch-Mode": "cors",
+  "Sec-Fetch-Site": "same-origin",
+};
+const USER_AGENTS = [
+  "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/129.0.0.0 Safari/537.36",
+  "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/129.0.0.0 Safari/537.36",
+  "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:130.0) Gecko/20100101 Firefox/130.0",
+  "Mozilla/5.0 (iPhone; CPU iPhone OS 17_6_1 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.6 Mobile/15E148 Safari/604.1",
+];
 
 class FplNotFound extends Error {}
+class FplHttpError extends Error {}
 
 async function fetchJson<T>(path: string): Promise<T> {
-  const res = await fetch(`${BASE_URL}${path}`, { headers: HEADERS });
-  if (res.status === 404) throw new FplNotFound(path);
-  if (!res.ok) throw new Error(`FPL API ${res.status} on ${path}`);
-  return res.json() as Promise<T>;
+  let lastError: unknown;
+  for (const ua of USER_AGENTS) {
+    try {
+      const res = await fetch(`${BASE_URL}${path}`, {
+        headers: { ...HEADERS, "User-Agent": ua },
+        signal: AbortSignal.timeout(12_000),
+      });
+      if (res.status === 404) throw new FplNotFound(path);
+      if (res.status === 403) {
+        lastError = new Error(`FPL API 403 on ${path}`);
+        continue;
+      }
+      if (!res.ok) throw new FplHttpError(`FPL API ${res.status} on ${path}`);
+      return (await res.json()) as T;
+    } catch (err) {
+      // Only 403s and network failures are worth another user agent.
+      if (err instanceof FplNotFound || err instanceof FplHttpError) throw err;
+      lastError = err;
+    }
+  }
+  throw lastError;
 }
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
